@@ -5,12 +5,13 @@ import 'websocket_service.dart';
 import 'dashboard_section.dart';
 import 'login_screen.dart';
 import 'footer_menu.dart';
-import 'custom_header.dart'; // Certifique-se de que está importando o CustomHeader corretamente
-import 'package:flutter_localizations/flutter_localizations.dart'; // Adicione esta linha
-import 'funcoes_screen.dart'; // Importando a tela de Funções
+import 'custom_header.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'funcoes_screen.dart';
+import 'splash_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MyApp());  // Removido o const aqui
 }
 
 class MyApp extends StatelessWidget {
@@ -21,8 +22,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       supportedLocales: const [
-        Locale('pt', 'BR'), // Português
-        Locale('en', 'US'), // Inglês
+        Locale('pt', 'BR'),
+        Locale('en', 'US'),
       ],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
@@ -36,13 +37,15 @@ class MyApp extends StatelessWidget {
           backgroundColor: Colors.transparent,
           type: BottomNavigationBarType.fixed,
         ),
-        splashColor: Colors.transparent, // Remove qualquer splash
-        highlightColor: Colors.transparent, // Remove o highlight
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
       ),
-      locale: WidgetsBinding.instance.window.locale, // Usa o idioma do sistema do dispositivo
-      home: const LoginScreen(),
+      locale: WidgetsBinding.instance.window.locale,
+      home: SplashScreen(), // Removido o const para permitir operações dinâmicas
       routes: {
-        '/home': (context) => MyHomePage(keyValue: ModalRoute.of(context)!.settings.arguments as String),
+        '/home': (context) => MyHomePage(
+              keyValue: ModalRoute.of(context)!.settings.arguments as String,
+            ),
       },
     );
   }
@@ -59,7 +62,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
   final List<String> _titles = ['Início', 'Funções', 'Utilitários'];
-  late List<Widget> _screens; // Adiciona uma lista de telas
+  late List<Widget> _screens;
   int? _coins;
   String? key;
   String? seller;
@@ -80,7 +83,6 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     _initializeWebSocketService();
 
-    // Inicializa as telas uma única vez, garantindo que elas mantenham o estado
     _screens = [
       DashboardSection(
         onRefresh: _onRefresh,
@@ -202,12 +204,11 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      appBar: CustomHeader( // Usando o CustomHeader no lugar do AppBar
+      appBar: CustomHeader(
         title: _titles[_selectedIndex],
         coins: _coins ?? 0,
       ),
       bottomNavigationBar: FooterMenu(
-        userKey: key ?? 'N/A',
         selectedIndex: _selectedIndex,
         onItemTapped: _onItemTapped,
       ),

@@ -14,18 +14,18 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.only(top: 30), // Remove o padding lateral para o divisor preencher a tela toda
-      decoration: BoxDecoration(
-        color: const Color(0xFF1a1a20), // Define a cor 0xFF1a1a20 como fundo do header
+      decoration: const BoxDecoration(
+        color: Color(0xFF1a1a20), // Cor de fundo
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0), // Padding lateral apenas para o conteúdo, não para o divisor
+              padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 8.0), // Padding lateral e superior
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween, // Coloca o título e as moedas no mesmo nível
+                crossAxisAlignment: CrossAxisAlignment.center, // Garante que estejam alinhados ao centro
                 children: [
                   // Título do header
                   Text(
@@ -57,16 +57,16 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
           ),
-          const SizedBox(height: 8), // Espaçamento entre o conteúdo e o divisor
-        Container(
-          height: 0.3,
-          color: Colors.white.withOpacity(0.5), // Divisor semitransparente
-        ),
+          const SizedBox(height: 8), // Pequeno espaçamento entre o conteúdo e o divisor
+          Container(
+            height: 0.3,
+            color: Colors.white.withOpacity(0.5), // Divisor semitransparente
+          ),
         ],
       ),
     );
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 30); // Ajuste de altura do header
+  Size get preferredSize => const Size.fromHeight(60); // Define a altura do header
 }

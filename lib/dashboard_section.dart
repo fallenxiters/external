@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'websocket_service.dart';
 import 'daily_missions.dart';
-import 'update_section.dart'; 
+import 'update_section.dart';
 
 class DashboardSection extends StatefulWidget {
   final Future<void> Function() onRefresh;
@@ -38,17 +38,17 @@ class _DashboardSectionState extends State<DashboardSection> with SingleTickerPr
   bool _isMissionLoading = true;
   bool _isTimerActive = true;
 
-  late BannerAd _bannerAd; 
+  late BannerAd _bannerAd;
   bool _isBannerAdReady = false;
-  RewardedAd? _rewardedAd; 
+  RewardedAd? _rewardedAd;
   bool _isRewardedAdReady = false;
 
   @override
   void initState() {
     super.initState();
     _initializeWebSocketService();
-    _loadBannerAd(); 
-    _loadRewardedAd(); 
+    _loadBannerAd();
+    _loadRewardedAd();
   }
 
   void _initializeWebSocketService() {
@@ -108,7 +108,7 @@ class _DashboardSectionState extends State<DashboardSection> with SingleTickerPr
       _rewardedAd?.show(
         onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
           print('Usuário assistiu ao anúncio e ganhou a recompensa');
-          _sendCoinsToServer(2);  
+          _sendCoinsToServer(2);
           _loadRewardedAd();
         },
       );
@@ -122,7 +122,7 @@ class _DashboardSectionState extends State<DashboardSection> with SingleTickerPr
       widget.webSocketService.sendMessage(jsonEncode({
         'action': 'add_coins',
         'user_key': widget.keyValue,
-        'amount': coins,  
+        'amount': coins,
       }));
       print('Enviado ao servidor: Adicionar $coins moedas para o usuário');
     } else {
@@ -182,8 +182,8 @@ class _DashboardSectionState extends State<DashboardSection> with SingleTickerPr
   void dispose() {
     _timer?.cancel();
     widget.webSocketService.close();
-    _bannerAd.dispose(); 
-    _rewardedAd?.dispose(); 
+    _bannerAd.dispose();
+    _rewardedAd?.dispose();
     super.dispose();
   }
 
@@ -194,36 +194,32 @@ class _DashboardSectionState extends State<DashboardSection> with SingleTickerPr
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Color(0xFF1e1e26), 
-              Color(0xFF1a1a20), 
-              Color(0xFF1e1e26), 
+              Color(0xFF1e1e26),
+              Color(0xFF1a1a20),
+              Color(0xFF1e1e26),
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
         ),
-        child: RefreshIndicator(
-          onRefresh: widget.onRefresh,
-          color: Colors.white,
-          child: ListView(
-            padding: const EdgeInsets.all(16.0),
-            children: [
-              const SectionTitle(title: 'Seus Dados'),
-              _buildUserDataSection(),
-              const SizedBox(height: 20),
-              const SectionTitle(title: 'Anúncios'),
-              _buildAdSection(),
-              const SizedBox(height: 20),
-              const SectionTitle(title: 'Ganhar Moedas'),
-              _buildRewardedAdSection(),
-              const SizedBox(height: 20),
-              const SectionTitle(title: 'Missões Diárias'),
-              _buildDailyMissionsSection(),
-              const SizedBox(height: 20),
-              const SectionTitle(title: 'Atualizações'),
-              const UpdateSection(), 
-            ],
-          ),
+        child: ListView(
+          padding: const EdgeInsets.all(16.0),
+          children: [
+            const SectionTitle(title: 'Seus Dados'),
+            _buildUserDataSection(),
+            const SizedBox(height: 20),
+            const SectionTitle(title: 'Anúncios'),
+            _buildAdSection(),
+            const SizedBox(height: 20),
+            const SectionTitle(title: 'Ganhar Moedas'),
+            _buildRewardedAdSection(),
+            const SizedBox(height: 20),
+            const SectionTitle(title: 'Missões Diárias'),
+            _buildDailyMissionsSection(),
+            const SizedBox(height: 20),
+            const SectionTitle(title: 'Atualizações'),
+            const UpdateSection(),
+          ],
         ),
       ),
     );
@@ -426,7 +422,7 @@ class _DashboardSectionState extends State<DashboardSection> with SingleTickerPr
                   ],
                 ),
                 GestureDetector(
-                  onTap: _claimReward, 
+                  onTap: _claimReward,
                   child: Container(
                     width: 100,
                     height: 40,

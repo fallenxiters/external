@@ -1,4 +1,4 @@
-package com.example.painelexternal2
+package com.mikeregedit.painelexternal
 
 import io.flutter.embedding.android.FlutterActivity
 
