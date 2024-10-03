@@ -16,13 +16,11 @@ Future<void> showSuccessSheet(BuildContext context, String message) async {
       return SafeArea(
         bottom: true,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0), // Largura garantida
           child: Container(
             decoration: BoxDecoration(
               color: const Color(0xFF1e1e26),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(20.0),
-              ),
+              borderRadius: BorderRadius.circular(20.0), // Arredondando todos os cantos
               border: Border.all(color: Colors.grey.withOpacity(0.5), width: 2.0),
             ),
             padding: const EdgeInsets.all(16.0),
@@ -72,19 +70,17 @@ Future<void> showErrorSheet(BuildContext context, String message) async {
     barrierColor: Colors.transparent,
     isScrollControlled: true,
     builder: (BuildContext context) {
-      // Adiciona uma leve vibração ao aparecer o modal
-      HapticFeedback.lightImpact();
+      // Vibração de alerta mais forte
+      HapticFeedback.vibrate();
 
       return SafeArea(
         bottom: true,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0), // Largura garantida
           child: Container(
             decoration: BoxDecoration(
               color: const Color(0xFF1e1e26),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(20.0),
-              ),
+              borderRadius: BorderRadius.circular(20.0), // Arredondando todos os cantos
               border: Border.all(color: Colors.red.withOpacity(0.5), width: 2.0),
             ),
             padding: const EdgeInsets.all(16.0),
@@ -102,8 +98,8 @@ Future<void> showErrorSheet(BuildContext context, String message) async {
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () {
-                    // Adiciona uma leve vibração ao clicar no botão
-                    HapticFeedback.lightImpact();
+                    // Vibração de alerta ao clicar no botão
+                    HapticFeedback.vibrate();
                     Navigator.of(context).pop();
                   },
                   style: ElevatedButton.styleFrom(
@@ -149,13 +145,11 @@ Future<void> showActionSheet(
       return SafeArea(
         bottom: true,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0), // Largura garantida
           child: Container(
             decoration: BoxDecoration(
               color: const Color(0xFF1e1e26),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(20.0),
-              ),
+              borderRadius: BorderRadius.circular(20.0), // Arredondando todos os cantos
               border: Border.all(color: Colors.grey.withOpacity(0.5), width: 2.0),
             ),
             padding: const EdgeInsets.all(16.0),
@@ -176,7 +170,7 @@ Future<void> showActionSheet(
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          // Adiciona uma leve vibração ao clicar em Ativar/Desativar
+                          // Vibração de alerta ao clicar em Ativar/Desativar
                           HapticFeedback.lightImpact();
                           Navigator.of(context).pop(true);
                           if (title == 'Modo Streamer') {
@@ -207,7 +201,7 @@ Future<void> showActionSheet(
                     Expanded(
                       child: TextButton(
                         onPressed: () {
-                          // Adiciona uma leve vibração ao clicar em Cancelar
+                          // Vibração de alerta ao clicar em Cancelar
                           HapticFeedback.lightImpact();
                           Navigator.of(context).pop(false);  // Cancela a ação
                         },
