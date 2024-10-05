@@ -37,7 +37,10 @@ class SidebarMenu extends StatelessWidget {
           ),
           child: Column(
             children: [
-              // Botão de fechar (ícone de X)
+              // Espaçamento para o status bar
+              SizedBox(height: MediaQuery.of(context).padding.top),
+              
+              // Botão de fechar (ícone de X) ajustado logo abaixo do status bar
               Align(
                 alignment: Alignment.topRight,
                 child: IconButton(
@@ -48,6 +51,7 @@ class SidebarMenu extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
+              
               // Foto de perfil e informações
               CircleAvatar(
                 radius: 40,
@@ -63,6 +67,7 @@ class SidebarMenu extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 5),
+              
               // Certifique-se de que a data esteja corretamente formatada aqui
               Text(
                 expiryDate != 'Data não definida' ? 'Validade: $expiryDate' : 'Data não definida',
@@ -72,11 +77,14 @@ class SidebarMenu extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
+              
               const Divider(
                 color: Colors.white54,
                 height: 1,
               ), // Divisor entre infos e itens do menu
+              
               const SizedBox(height: 10),
+              
               _buildMenuItem(context, index: 0, icon: Icons.home_outlined, label: 'Início'),
               _buildMenuItem(context, index: 1, icon: Icons.widgets_outlined, label: 'Funções'),
               _buildMenuItem(context, index: 2, icon: Icons.handyman_outlined, label: 'Utilitários'),

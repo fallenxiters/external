@@ -7,7 +7,7 @@ class UpdateSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 80), // Espaço extra no fundo para evitar sobreposição do footer
+      margin: const EdgeInsets.only(bottom: 0), // Remove o espaçamento inferior
       decoration: BoxDecoration(
         color: const Color(0xFF14141a),
         borderRadius: BorderRadius.circular(10),

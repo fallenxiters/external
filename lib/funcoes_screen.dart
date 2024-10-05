@@ -20,13 +20,14 @@ class FuncoesScreen extends StatefulWidget {
 }
 
 class _FuncoesScreenState extends State<FuncoesScreen> {
-  List<bool> _selectedOptions = [false, false, false];
-  List<bool> _isLoading = [false, false, false];
+  List<bool> _selectedOptions = [false, false, false, false, false]; 
+  List<bool> _isLoading = [false, false, false, false, false];
   int _coins = 0;
   WebSocketService? _webSocketService;
   List<String> _activeFunctions = [];
   bool _isAntiGravacaoActivated = false;
   bool _isAntiGravacaoLoading = false;
+  double _sensibilidadeEficacia = 0;
   InterstitialAd? _interstitialAd;
   bool _isInterstitialAdReady = false;
 
@@ -75,7 +76,10 @@ class _FuncoesScreenState extends State<FuncoesScreen> {
       _selectedOptions[0] = prefs.getBool('option_0') ?? false;
       _selectedOptions[1] = prefs.getBool('option_1') ?? false;
       _selectedOptions[2] = prefs.getBool('option_2') ?? false;
+      _selectedOptions[3] = prefs.getBool('option_3') ?? false;
+      _selectedOptions[4] = prefs.getBool('option_4') ?? false;
       _isAntiGravacaoActivated = prefs.getBool('anti_gravacao_activated') ?? false;
+      _sensibilidadeEficacia = prefs.getDouble('sensibilidade_eficacia') ?? 0; 
     });
   }
 
@@ -117,6 +121,54 @@ class _FuncoesScreenState extends State<FuncoesScreen> {
     });
   }
 
+  Future<void> _toggleOption(int index, String title) async {
+    setState(() {
+      _isLoading[index] = true;
+    });
+
+    await Future.delayed(const Duration(seconds: 1));
+
+    bool newState = !_selectedOptions[index];
+
+    _webSocketService?.sendMessage(jsonEncode({
+      'action': 'toggle_function',
+      'user_key': await _storage.read(key: 'user_key'),
+      'function_name': title,
+      'activated': newState,
+    }));
+
+    setState(() {
+      _selectedOptions[index] = newState;
+      _isLoading[index] = false;
+    });
+
+    _saveSelectedOption(index, newState);
+
+    await showSuccessSheet(context, '$title foi ${newState ? 'ativado' : 'desativado'} com sucesso.');
+  }
+
+  Future<void> _toggleAntiGravacao() async {
+    setState(() {
+      _isAntiGravacaoLoading = true;
+    });
+
+    await Future.delayed(const Duration(seconds: 1));
+
+    setState(() {
+      _isAntiGravacaoActivated = !_isAntiGravacaoActivated;
+      _isAntiGravacaoLoading = false;
+      _saveAntiGravacaoState();
+    });
+
+    await showSuccessSheet(context, 'Modo Streamer foi ${_isAntiGravacaoActivated ? 'ativado' : 'desativado'} com sucesso.');
+
+    if (_isAntiGravacaoActivated) {
+      await _toggleAntiGravacaoNative("activateAntiGravacao");
+    } else {
+      await _toggleAntiGravacaoNative("deactivateAntiGravacao");
+    }
+  }
+
   Future<void> _purchaseFunctionWithCoins(String title, int cost) async {
     setState(() {
       _isAntiGravacaoLoading = true;
@@ -146,33 +198,14 @@ class _FuncoesScreenState extends State<FuncoesScreen> {
     });
   }
 
-  Future<void> _saveAntiGravacaoState() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setBool('anti_gravacao_activated', _isAntiGravacaoActivated);
+  Future<void> _saveSelectedOption(int index, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setBool('option_$index', value);
   }
 
-  Future<void> _toggleAntiGravacao() async {
-    setState(() {
-      _isAntiGravacaoLoading = true;
-    });
-
-    await Future.delayed(const Duration(seconds: 1));
-
-    setState(() {
-      _isAntiGravacaoActivated = !_isAntiGravacaoActivated;
-      _isAntiGravacaoLoading = false;
-      _saveAntiGravacaoState();
-    });
-
-    await showSuccessSheet(context, 'Modo Streamer foi ${_isAntiGravacaoActivated ? 'ativada' : 'desativada'} com sucesso.');
-
-    if (_isAntiGravacaoActivated) {
-      // Ativa a proteção contra gravação de tela (chama o método nativo iOS)
-      await _toggleAntiGravacaoNative("activateAntiGravacao");
-    } else {
-      // Desativa a proteção contra gravação de tela (chama o método nativo iOS)
-      await _toggleAntiGravacaoNative("deactivateAntiGravacao");
-    }
+  Future<void> _saveAntiGravacaoState() async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setBool('anti_gravacao_activated', _isAntiGravacaoActivated);
   }
 
   Future<void> _toggleAntiGravacaoNative(String method) async {
@@ -184,26 +217,9 @@ class _FuncoesScreenState extends State<FuncoesScreen> {
     }
   }
 
-  Future<void> _toggleOption(int index, String title) async {
-    setState(() {
-      _isLoading[index] = true;
-    });
-
-    await Future.delayed(const Duration(seconds: 1));
-
-    setState(() {
-      _selectedOptions[index] = !_selectedOptions[index];
-      _isLoading[index] = false;
-    });
-
-    _saveSelectedOption(index, _selectedOptions[index]);
-
-    await showSuccessSheet(context, '$title foi ${_selectedOptions[index] ? 'ativado' : 'desativado'} com sucesso.');
-  }
-
-  Future<void> _saveSelectedOption(int index, bool value) async {
+  Future<void> _saveSensibilidadeEficacia(double value) async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setBool('option_$index', value);
+    prefs.setDouble('sensibilidade_eficacia', value);
   }
 
   @override
@@ -221,9 +237,10 @@ class _FuncoesScreenState extends State<FuncoesScreen> {
             end: Alignment.bottomCenter,
           ),
         ),
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: ListView(
           children: [
+            const SizedBox(height: 20),
             Text(
               'Funções Normais',
               style: GoogleFonts.poppins(
@@ -237,7 +254,11 @@ class _FuncoesScreenState extends State<FuncoesScreen> {
             const SizedBox(height: 10),
             _buildFunctionCard('Melhorar Mira Scope', 'Melhora a mira quando aberta.', 1),
             const SizedBox(height: 10),
-            _buildFunctionCard('Calibrar Sensibilidade', 'Melhora a sua sensibilidade.', 2),
+            _buildFunctionCard('Diminuir Recuo', 'Reduz o recuo das armas.', 3),
+            const SizedBox(height: 10),
+            _buildFunctionCard('Aumentar Precisão', 'Aumenta a precisão dos tiros.', 4),
+            const SizedBox(height: 10),
+            _buildFunctionCardWithSlider('Calibrar Sensibilidade', 'Melhora a sua sensibilidade.', 2),
             const SizedBox(height: 20),
             Text(
               'Funções Bônus',
@@ -327,6 +348,104 @@ class _FuncoesScreenState extends State<FuncoesScreen> {
                     ),
                   ),
                 ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFunctionCardWithSlider(String title, String subtitle, int index) {
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: const Color(0xFF14141a),
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      subtitle,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _isLoading[index]
+                  ? buildCustomLoader()
+                  : GestureDetector(
+                      onTap: () {
+                        showActionSheet(context, index, title, _selectedOptions[index], _toggleOption, _toggleAntiGravacao);
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        height: 24,
+                        width: 24,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: _selectedOptions[index]
+                              ? const LinearGradient(
+                                  colors: [Color(0xFFBB86FC), Color(0xFF6200EE)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                )
+                              : null,
+                          border: Border.all(
+                            color: _selectedOptions[index] ? Colors.transparent : Colors.white,
+                            width: 2,
+                          ),
+                        ),
+                        child: AnimatedOpacity(
+                          opacity: _selectedOptions[index] ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 300),
+                          child: _selectedOptions[index]
+                              ? const Icon(
+                                  Icons.check,
+                                  size: 16,
+                                  color: Colors.white,
+                                )
+                              : null,
+                        ),
+                      ),
+                    ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _selectedOptions[index]
+              ? Slider(
+                  value: _sensibilidadeEficacia,
+                  min: 0,
+                  max: 50,
+                  divisions: 50,
+                  label: _sensibilidadeEficacia.round().toString(),
+                  onChanged: (value) {
+                    setState(() {
+                      _sensibilidadeEficacia = value;
+                    });
+                    _saveSensibilidadeEficacia(value);
+                  },
+                )
+              : Container(),
         ],
       ),
     );

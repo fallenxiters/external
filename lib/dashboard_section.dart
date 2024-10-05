@@ -47,7 +47,7 @@ class _DashboardSectionState extends State<DashboardSection> with SingleTickerPr
   void initState() {
     super.initState();
     _initializeWebSocketService();
-    _loadBannerAd();
+    // _loadBannerAd();  // Comentando a função de carregamento do banner de anúncios
     _loadRewardedAd();
   }
 
@@ -61,27 +61,27 @@ class _DashboardSectionState extends State<DashboardSection> with SingleTickerPr
     }
   }
 
-  void _loadBannerAd() {
-    _bannerAd = BannerAd(
-      adUnitId: 'ca-app-pub-7365501546750544/5320207149',
-      size: AdSize.banner,
-      request: AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (_) {
-          setState(() {
-            _isBannerAdReady = true;
-          });
-          print('Banner Ad carregado');
-        },
-        onAdFailedToLoad: (ad, error) {
-          print('Erro ao carregar o banner ad: ${error.message}');
-          ad.dispose();
-        },
-      ),
-    );
+  // void _loadBannerAd() {  // Comentando a função de carregamento do banner de anúncios
+  //   _bannerAd = BannerAd(
+  //     adUnitId: 'ca-app-pub-7365501546750544/5320207149',
+  //     size: AdSize.banner,
+  //     request: AdRequest(),
+  //     listener: BannerAdListener(
+  //       onAdLoaded: (_) {
+  //         setState(() {
+  //           _isBannerAdReady = true;
+  //         });
+  //         print('Banner Ad carregado');
+  //       },
+  //       onAdFailedToLoad: (ad, error) {
+  //         print('Erro ao carregar o banner ad: ${error.message}');
+  //         ad.dispose();
+  //       },
+  //     ),
+  //   );
 
-    _bannerAd.load();
-  }
+  //   _bannerAd.load();
+  // }
 
   void _loadRewardedAd() {
     RewardedAd.load(
@@ -182,7 +182,7 @@ class _DashboardSectionState extends State<DashboardSection> with SingleTickerPr
   void dispose() {
     _timer?.cancel();
     widget.webSocketService.close();
-    _bannerAd.dispose();
+    // _bannerAd.dispose();  // Comentando a função de descarte do banner de anúncios
     _rewardedAd?.dispose();
     super.dispose();
   }
@@ -208,12 +208,12 @@ class _DashboardSectionState extends State<DashboardSection> with SingleTickerPr
             const SectionTitle(title: 'Seus Dados'),
             _buildUserDataSection(),
             const SizedBox(height: 20),
-            const SectionTitle(title: 'Anúncios'),
-            _buildAdSection(),
-            const SizedBox(height: 20),
-            const SectionTitle(title: 'Ganhar Moedas'),
-            _buildRewardedAdSection(),
-            const SizedBox(height: 20),
+            // const SectionTitle(title: 'Anúncios'), // Comentando o título da seção de anúncios
+            // _buildAdSection(),  // Comentando a exibição da seção de anúncios
+            // const SizedBox(height: 20),
+            // const SectionTitle(title: 'Ganhar Moedas'),
+            //_buildRewardedAdSection(),
+            // const SizedBox(height: 20),
             const SectionTitle(title: 'Missões Diárias'),
             _buildDailyMissionsSection(),
             const SizedBox(height: 20),
@@ -282,94 +282,94 @@ class _DashboardSectionState extends State<DashboardSection> with SingleTickerPr
     );
   }
 
-  Widget _buildAdSection() {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF14141a),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      padding: const EdgeInsets.all(16.0),
-      child: Center(
-        child: _isBannerAdReady
-            ? Container(
-                width: _bannerAd.size.width.toDouble(),
-                height: _bannerAd.size.height.toDouble(),
-                child: AdWidget(ad: _bannerAd),
-              )
-            : Text(
-                'Carregando anúncio...',
-                style: GoogleFonts.poppins(color: Colors.grey, fontSize: 16),
-              ),
-      ),
-    );
-  }
+  // Widget _buildAdSection() {  // Comentando a função que constrói a seção de anúncios
+  //   return Container(
+  //     decoration: BoxDecoration(
+  //       color: const Color(0xFF14141a),
+  //       borderRadius: BorderRadius.circular(10),
+  //     ),
+  //     padding: const EdgeInsets.all(16.0),
+  //     child: Center(
+  //       child: _isBannerAdReady
+  //           ? Container(
+  //               width: _bannerAd.size.width.toDouble(),
+  //               height: _bannerAd.size.height.toDouble(),
+  //               child: AdWidget(ad: _bannerAd),
+  //             )
+  //           : Text(
+  //               'Carregando anúncio...',
+  //               style: GoogleFonts.poppins(color: Colors.grey, fontSize: 16),
+  //             ),
+  //     ),
+  //   );
+  // }
 
-  Widget _buildRewardedAdSection() {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF14141a),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Assistir Anúncio e Ganhar Moedas',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Assista a um anúncio recompensado e ganhe 2 moedas.',
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: Colors.grey,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.monetization_on, color: Colors.amber),
-                  const SizedBox(width: 5),
-                  Text(
-                    '2',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-              ElevatedButton(
-                onPressed: _isRewardedAdReady ? _showRewardedAd : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _isRewardedAdReady ? Colors.green : Colors.grey,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: Text(
-                  _isRewardedAdReady ? 'Assistir Agora' : 'Carregando...',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+// Widget _buildRewardedAdSection() {
+//   return Container(
+//     decoration: BoxDecoration(
+//       color: const Color(0xFF14141a),
+//       borderRadius: BorderRadius.circular(10),
+//     ),
+//     padding: const EdgeInsets.all(16.0),
+//     child: Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         Text(
+//           'Assistir Anúncio e Ganhar Moedas',
+//           style: GoogleFonts.poppins(
+//             fontSize: 16,
+//             fontWeight: FontWeight.bold,
+//             color: Colors.white,
+//           ),
+//         ),
+//         const SizedBox(height: 8),
+//         Text(
+//           'Assista a um anúncio recompensado e ganhe 2 moedas.',
+//           style: GoogleFonts.poppins(
+//             fontSize: 14,
+//             color: Colors.grey,
+//           ),
+//         ),
+//         const SizedBox(height: 10),
+//         Row(
+//           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//           children: [
+//             Row(
+//               children: [
+//                 const Icon(Icons.monetization_on, color: Colors.amber),
+//                 const SizedBox(width: 5),
+//                 Text(
+//                   '2',
+//                   style: GoogleFonts.poppins(
+//                     color: Colors.white,
+//                     fontSize: 16,
+//                   ),
+//                 ),
+//               ],
+//             ),
+//             ElevatedButton(
+//               onPressed: _isRewardedAdReady ? _showRewardedAd : null,
+//               style: ElevatedButton.styleFrom(
+//                 backgroundColor: _isRewardedAdReady ? Colors.green : Colors.grey,
+//                 shape: RoundedRectangleBorder(
+//                   borderRadius: BorderRadius.circular(16),
+//                 ),
+//               ),
+//               child: Text(
+//                 _isRewardedAdReady ? 'Assistir Agora' : 'Carregando...',
+//                 style: GoogleFonts.poppins(
+//                   fontSize: 16,
+//                   fontWeight: FontWeight.bold,
+//                   color: Colors.white,
+//                 ),
+//               ),
+//             ),
+//           ],
+//         ),
+//       ],
+//     ),
+//   );
+// }
 
   Widget _buildDailyMissionsSection() {
     if (_isMissionLoading) {
