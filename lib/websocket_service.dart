@@ -6,9 +6,9 @@ class WebSocketService {
   final String keyValue;
   final Function(int) onCoinsUpdated;
   final Function(String) onError;
-  Function(String, String, String)? onUserDataUpdated;
+  Function(String, String, String)? onUserDataUpdated; // Chave, Vendedor, Data
   Function(bool, int)? onMissionUpdate;
-  Function(List<String>)? onFunctionsUpdated; // Adiciona o callback para funções compradas
+  Function(List<String>)? onFunctionsUpdated;
 
   WebSocketService({
     required this.keyValue,
@@ -16,7 +16,7 @@ class WebSocketService {
     required this.onError,
     this.onUserDataUpdated,
     this.onMissionUpdate,
-    this.onFunctionsUpdated, // Adiciona no construtor
+    this.onFunctionsUpdated,
   });
 
   // Método para conectar ao WebSocket
@@ -27,11 +27,9 @@ class WebSocketService {
         _channel!.sink.add(jsonEncode({'key': keyValue}));
       }
 
-      // Escuta as mensagens do WebSocket
       _channel!.stream.listen(
         (message) {
-          print('Mensagem recebida: $message'); // Log para inspecionar todas as mensagens recebidas
-
+          print('Mensagem recebida: $message');
           final data = jsonDecode(message);
 
           if (data['message'] == 'success' || data['message'] == 'update') {
@@ -40,9 +38,10 @@ class WebSocketService {
 
             String key = data['key'] ?? '';
             String seller = data['seller'] ?? '';
-            String expirydate = data['expirydate'] ?? '';
+            String expiryDate = _parseExpiryDate(data['expirydate'] ?? ''); // Verifica e formata a data de validade
+
             if (onUserDataUpdated != null) {
-              onUserDataUpdated!(key, seller, expirydate);
+              onUserDataUpdated!(key, seller, expiryDate); // Chama callback para atualizar UI
             }
 
             if (data.containsKey('canClaim') && onMissionUpdate != null) {
@@ -50,7 +49,6 @@ class WebSocketService {
             }
 
             if (data.containsKey('activeFunctions') && onFunctionsUpdated != null) {
-              // Chama o callback para atualizar as funções compradas
               onFunctionsUpdated!(List<String>.from(data['activeFunctions']));
             }
 
@@ -59,32 +57,42 @@ class WebSocketService {
           } else if (data['message'] == 'mission_claimed' && onMissionUpdate != null) {
             onMissionUpdate!(false, 86400);
           } else if (data['message'] == 'update_coins') {
-            // Atualizar as moedas corretamente, não é um erro
             int coins = data['coins'] ?? 0;
             onCoinsUpdated(coins);
-            print('Moedas atualizadas: $coins'); // Log de atualização de moedas
+            print('Moedas atualizadas: $coins');
           } else {
-            // Qualquer outra mensagem é tratada como erro
             onError('Mensagem de erro recebida: ${data['message']}');
-            print('Erro: Mensagem de erro recebida: ${data['message']}'); // Log de erro
+            print('Erro: Mensagem de erro recebida: ${data['message']}');
           }
         },
         onError: (error) {
           onError('Erro no WebSocket: $error');
-          print('Erro no WebSocket: $error'); // Log de erro no WebSocket
+          print('Erro no WebSocket: $error');
           reconnect();
         },
         onDone: () {
-          print('WebSocket connection closed. Reconnecting...'); // Log de conexão fechada
+          print('WebSocket connection closed. Reconnecting...');
           reconnect();
         },
         cancelOnError: false,
       );
     } catch (e) {
       onError('Erro ao conectar com o WebSocket: $e');
-      print('Erro ao conectar com o WebSocket: $e'); // Log de erro ao conectar
+      print('Erro ao conectar com o WebSocket: $e');
       reconnect();
     }
+  }
+
+  String _parseExpiryDate(String expiryDate) {
+    if (expiryDate.isNotEmpty) {
+      try {
+        DateTime parsedDate = DateTime.parse(expiryDate);
+        return '${parsedDate.day}/${parsedDate.month}/${parsedDate.year}'; // Formatação da data
+      } catch (e) {
+        return 'Data inválida'; // Se houver erro ao interpretar a data
+      }
+    }
+    return 'Data não definida';
   }
 
   // Método para enviar mensagens ao WebSocket
@@ -92,21 +100,17 @@ class WebSocketService {
     _channel?.sink.add(message);
   }
 
-  // Getter para escutar as mensagens recebidas do WebSocket
   Stream get onMessage => _channel!.stream;
 
-  // Método para reclamar uma missão
   void claimMission(String key, int missionId) {
     if (key.isNotEmpty) {
       _channel?.sink.add(jsonEncode({'action': 'claim_mission', 'user_key': key, 'mission_id': missionId}));
-      print('Solicitação para resgatar missão enviada: key=$key, missionId=$missionId'); // Log de solicitação de resgate de missão
+      print('Solicitação para resgatar missão enviada: key=$key, missionId=$missionId');
     } else {
       onError('Chave do usuário está vazia. Não é possível resgatar a missão.');
-      print('Erro: Chave do usuário está vazia. Não é possível resgatar a missão.'); // Log de erro de chave vazia
     }
   }
 
-  // Método para reconectar o WebSocket
   void reconnect() {
     close();
     Future.delayed(const Duration(seconds: 2), () {
@@ -114,11 +118,10 @@ class WebSocketService {
     });
   }
 
-  // Método para fechar o WebSocket
   void close() {
     if (_channel != null) {
       _channel!.sink.close();
-      print('WebSocket connection closed.'); // Log de conexão fechada
+      print('WebSocket connection closed.');
     }
   }
 }

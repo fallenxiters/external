@@ -4,14 +4,14 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'websocket_service.dart';
 import 'dashboard_section.dart';
 import 'login_screen.dart';
-import 'footer_menu.dart';
+import 'sidebar_menu.dart';
 import 'custom_header.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'funcoes_screen.dart';
 import 'splash_screen.dart';
 
 void main() {
-  runApp(MyApp());  // Removido o const aqui
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -41,7 +41,7 @@ class MyApp extends StatelessWidget {
         highlightColor: Colors.transparent,
       ),
       locale: WidgetsBinding.instance.window.locale,
-      home: SplashScreen(), // Removido o const para permitir operações dinâmicas
+      home: SplashScreen(),
       routes: {
         '/home': (context) => MyHomePage(
               keyValue: ModalRoute.of(context)!.settings.arguments as String,
@@ -60,6 +60,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>(); // Chave para o Scaffold
   int _selectedIndex = 0;
   final List<String> _titles = ['Início', 'Funções', 'Utilitários'];
   late List<Widget> _screens;
@@ -203,17 +204,23 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true,
+      key: _scaffoldKey, // Usando o GlobalKey
+      drawer: SidebarMenu(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onItemTapped,
+        keyData: key ?? 'Chave não definida', // Passando a chave
+        expiryDate: expiryDate ?? 'Data não definida', // Passando a data de validade
+        profileImageUrl: 'https://example.com/your-profile-image.jpg', // URL da imagem de perfil
+      ),
       appBar: CustomHeader(
         title: _titles[_selectedIndex],
         coins: _coins ?? 0,
-      ),
-      bottomNavigationBar: FooterMenu(
-        selectedIndex: _selectedIndex,
-        onItemTapped: _onItemTapped,
+        onMenuTap: () {
+          _scaffoldKey.currentState?.openDrawer(); // Abrindo o drawer via GlobalKey
+        },
       ),
       body: IndexedStack(
-        index: _selectedIndex,
+        index: _selectedIndex, // Mantém o estado de cada aba
         children: _screens,
       ),
     );
