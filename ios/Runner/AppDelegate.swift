@@ -1,5 +1,5 @@
-import Flutter
 import UIKit
+import Flutter
 
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
@@ -29,50 +29,26 @@ import UIKit
   }
 
   private func activateAntiGravacao() {
-    // Adiciona uma view preta sobre a janela para impedir capturas de tela e gravações
-    let shieldView = UIView(frame: UIScreen.main.bounds)
-    shieldView.backgroundColor = UIColor.black
-    shieldView.tag = 999 // Para facilitar a remoção posteriormente
-    shieldView.isUserInteractionEnabled = false
+    // Protege o conteúdo da captura de tela, sem mudar a tela visível
     if let window = UIApplication.shared.windows.first {
-      window.addSubview(shieldView)
+      window.isHidden = true // Isso protege o conteúdo contra gravação e captura de tela
+      window.isHidden = false
     }
-    
-    // Desativa a gravação de tela
-    UIScreen.main.isCaptured.addObserver(self, forKeyPath: "captured", options: .new, context: nil)
+
+    // Observa as notificações de gravação de tela
+    NotificationCenter.default.addObserver(self, selector: #selector(screenCaptureChanged), name: UIScreen.capturedDidChangeNotification, object: nil)
   }
 
   private func deactivateAntiGravacao() {
-    // Remove a view preta
-    if let window = UIApplication.shared.windows.first {
-      if let shieldView = window.viewWithTag(999) {
-        shieldView.removeFromSuperview()
-      }
-    }
-
     // Remove o observador de gravação de tela
-    UIScreen.main.removeObserver(self, forKeyPath: "captured")
+    NotificationCenter.default.removeObserver(self, name: UIScreen.capturedDidChangeNotification, object: nil)
   }
 
-  override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
-    if keyPath == "captured" {
-      if UIScreen.main.isCaptured {
-        // A gravação de tela foi detectada
-        if let window = UIApplication.shared.windows.first {
-          let shieldView = UIView(frame: UIScreen.main.bounds)
-          shieldView.backgroundColor = UIColor.black
-          shieldView.tag = 999
-          shieldView.isUserInteractionEnabled = false
-          window.addSubview(shieldView)
-        }
-      } else {
-        // A gravação de tela foi interrompida
-        if let window = UIApplication.shared.windows.first {
-          if let shieldView = window.viewWithTag(999) {
-            shieldView.removeFromSuperview()
-          }
-        }
-      }
+  @objc func screenCaptureChanged() {
+    if UIScreen.main.isCaptured {
+      print("Gravação ou captura de tela detectada.")
+    } else {
+      print("Gravação ou captura de tela interrompida.")
     }
   }
 }

@@ -15,44 +15,51 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFF1a1a20), // Fundo sólido que não muda de cor
+    return ClipRect(
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          SafeArea(
-            child: AppBar(
-              backgroundColor: Colors.transparent, // Deixa o fundo do AppBar transparente para o Container cobrir
-              elevation: 0,
-              centerTitle: true, // Centraliza o título
-              titleSpacing: 0, // Remove espaçamento extra ao redor do título
-              toolbarHeight: 50, // Define a altura do AppBar
-              leading: Padding(
-                padding: const EdgeInsets.only(top: 0.0), // Mantém o ícone logo abaixo do SafeArea
-                child: IconButton(
-                  icon: const Icon(Icons.menu),
-                  color: Colors.white,
-                  onPressed: onMenuTap,
-                ),
-              ),
-              title: Padding(
-                padding: const EdgeInsets.only(top: 0.0), // Mantém o título logo abaixo do SafeArea
-                child: Text(
-                  title,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.bold,
+          Container(
+            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+            height: 65, // Header ligeiramente maior
+            color: const Color(0xFF1a1a20), // Cor de fundo
+            child: Stack(
+              children: [
+                // Título sempre centralizado
+                Center(
+                  child: Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 18.0,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
-              actions: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 16.0, top: 0.0), // Mantém as moedas logo abaixo do SafeArea
+                // Ícone do menu mais à esquerda
+                Positioned(
+                  left: 1, // Ajuste o valor para alinhar o ícone com o conteúdo das seções
+                  top: 0,
+                  bottom: 0, // Centraliza verticalmente
+                  child: IconButton(
+                    icon: const Icon(Icons.menu),
+                    color: Colors.white,
+                    onPressed: onMenuTap,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ),
+                // Moedas mais à direita
+                Positioned(
+                  right: 16.0, // Mais para dentro
+                  top: 0,
+                  bottom: 0, // Centraliza verticalmente
                   child: Row(
                     children: [
                       Icon(
                         Icons.monetization_on,
                         color: Colors.amber.withOpacity(0.9),
+                        size: 20,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -68,10 +75,10 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               ],
             ),
           ),
-          // Divisor logo abaixo do AppBar
+          // Divisor cinzento logo abaixo do header
           Container(
-            height: 1.0,
-            color: Colors.white.withOpacity(0.5), // Divisor semitransparente
+            height: 0.3, // Divisor mais fino
+            color: Colors.grey.withOpacity(0.2), // Divisor cinzento semitransparente
           ),
         ],
       ),
@@ -79,5 +86,5 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(51.0); // Incluindo altura do divisor
+  Size get preferredSize => const Size.fromHeight(65.3); // Altura do header ajustada (60 + 0.3 para o divisor)
 }
