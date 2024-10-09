@@ -45,7 +45,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               const SizedBox(width: 4),
               Text(
                 _formatCoins(coins),
-                style: TextStyle(
+                style: GoogleFonts.montserrat(
                   color: Colors.white.withOpacity(0.9),
                   fontSize: 16,
                 ),
