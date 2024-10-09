@@ -3,14 +3,16 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'dart:convert';
+import 'dart:convert'; // Para jsonEncode e jsonDecode
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'websocket_service.dart';
-import 'alert_helpers.dart';  
-import 'progress_helper.dart';  
-import 'purchase_service.dart';  
-import 'anti_gravacao_service.dart';  
-import 'package:flutter/services.dart'; // Import necessário para MethodChannel
+import 'alert_helpers.dart'; // Certifique-se de importar o alert_helpers
+import 'progress_helper.dart';
+import 'purchase_service.dart';
+import 'anti_gravacao_service.dart';
+import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;  // Adicionando o pacote HTTP
+
 
 class FuncoesScreen extends StatefulWidget {
   const FuncoesScreen({Key? key}) : super(key: key);
@@ -20,14 +22,16 @@ class FuncoesScreen extends StatefulWidget {
 }
 
 class _FuncoesScreenState extends State<FuncoesScreen> {
-  List<bool> _selectedOptions = [false, false, false, false, false]; 
-  List<bool> _isLoading = [false, false, false, false, false];
+  List<bool> _selectedOptions = [false, false, false, false, false, false, false, false];
+  List<bool> _isLoading = [false, false, false, false, false, false, false, false];
   int _coins = 0;
   WebSocketService? _webSocketService;
   List<String> _activeFunctions = [];
   bool _isAntiGravacaoActivated = false;
   bool _isAntiGravacaoLoading = false;
   double _sensibilidadeEficacia = 0;
+  double _aimScopeEficacia = 0;
+  double _aimNeckEficacia = 0;
   InterstitialAd? _interstitialAd;
   bool _isInterstitialAdReady = false;
 
@@ -78,8 +82,13 @@ class _FuncoesScreenState extends State<FuncoesScreen> {
       _selectedOptions[2] = prefs.getBool('option_2') ?? false;
       _selectedOptions[3] = prefs.getBool('option_3') ?? false;
       _selectedOptions[4] = prefs.getBool('option_4') ?? false;
+      _selectedOptions[5] = prefs.getBool('option_5') ?? false;
+      _selectedOptions[6] = prefs.getBool('option_6') ?? false;
+      _selectedOptions[7] = prefs.getBool('option_7') ?? false;
       _isAntiGravacaoActivated = prefs.getBool('anti_gravacao_activated') ?? false;
-      _sensibilidadeEficacia = prefs.getDouble('sensibilidade_eficacia') ?? 0; 
+      _sensibilidadeEficacia = prefs.getDouble('sensibilidade_eficacia') ?? 0;
+      _aimScopeEficacia = prefs.getDouble('aim_scope_eficacia') ?? 0;
+      _aimNeckEficacia = prefs.getDouble('aim_neck_eficacia') ?? 0;
     });
   }
 
@@ -123,7 +132,7 @@ class _FuncoesScreenState extends State<FuncoesScreen> {
 
   Future<void> _toggleOption(int index, String title) async {
     setState(() {
-      _isLoading[index] = true;
+      _isLoading[index] = true; // Exibe o progresso para a função atual
     });
 
     await Future.delayed(const Duration(seconds: 1));
@@ -169,34 +178,55 @@ class _FuncoesScreenState extends State<FuncoesScreen> {
     }
   }
 
-  Future<void> _purchaseFunctionWithCoins(String title, int cost) async {
-    setState(() {
-      _isAntiGravacaoLoading = true;
-    });
+Future<void> _purchaseFunctionWithCoins(String title, int cost, Function onPurchaseCompleted, int index) async {
+  setState(() {
+    for (int i = 0; i < _isLoading.length; i++) {
+      _isLoading[i] = false;  // Desativa o progresso para todas as funções
+    }
+    _isLoading[index] = true; // Ativa o progresso apenas para a função atual
+  });
 
-    final purchaseService = PurchaseService(
-      webSocketService: _webSocketService,
-      coins: _coins,
-      context: context,
-      onCoinsUpdated: (coinsRemaining) {
-        setState(() {
-          _coins = coinsRemaining;
-        });
-      },
-      onFunctionPurchased: () {
-        setState(() {
-          _isAntiGravacaoActivated = false;
-        });
-      },
-      showInterstitialAd: _showInterstitialAd,
+  String? userKey = await _storage.read(key: 'user_key');
+
+  if (userKey == null) {
+    showErrorSheet(context, 'Erro: Chave do usuário não encontrada.');
+    return;
+  }
+
+  try {
+    final url = Uri.parse('https://mikeregedit.glitch.me/api/buyFunction');
+    final response = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "userKey": userKey,
+        "functionName": title
+      }),
     );
 
-    await purchaseService.purchaseFunctionWithCoins(title, cost, _saveAntiGravacaoState);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      setState(() {
+        _activeFunctions.add(title);
+        _selectedOptions[index] = true;
+        _coins = data['coinsRemaining'];
+      });
 
+      await showSuccessSheet(context, '$title foi comprada com sucesso. Moedas restantes: ${data['coinsRemaining']}');
+    } else {
+      final errorData = jsonDecode(response.body);
+      await showErrorSheet(context, 'Moedas insuficientes. Você tem ${errorData['coinsAvailable']}, mas precisa de ${errorData['coinsRequired']}.');
+    }
+  } catch (error) {
+    await showErrorSheet(context, 'Erro ao tentar comprar a função: $error');
+  } finally {
     setState(() {
-      _isAntiGravacaoLoading = false;
+      _isLoading[index] = false; // Desativa o progresso para a função atual
     });
   }
+}
+
+
 
   Future<void> _saveSelectedOption(int index, bool value) async {
     final prefs = await SharedPreferences.getInstance();
@@ -222,6 +252,16 @@ class _FuncoesScreenState extends State<FuncoesScreen> {
     prefs.setDouble('sensibilidade_eficacia', value);
   }
 
+  Future<void> _saveAimScopeEficacia(double value) async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setDouble('aim_scope_eficacia', value);
+  }
+
+  Future<void> _saveAimNeckEficacia(double value) async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setDouble('aim_neck_eficacia', value);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -243,7 +283,7 @@ class _FuncoesScreenState extends State<FuncoesScreen> {
             const SizedBox(height: 20),
             Text(
               'Funções Normais',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.montserrat(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -258,18 +298,20 @@ class _FuncoesScreenState extends State<FuncoesScreen> {
             const SizedBox(height: 10),
             _buildFunctionCard('Aumentar Precisão', 'Aumenta a precisão dos tiros.', 4),
             const SizedBox(height: 10),
-            _buildFunctionCardWithSlider('Calibrar Sensibilidade', 'Melhora a sua sensibilidade.', 2),
+            _buildFunctionCard('Calibrar Sensibilidade', 'Melhora a sua sensibilidade.', 5),
             const SizedBox(height: 20),
             Text(
               'Funções Bônus',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.montserrat(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
             ),
             const SizedBox(height: 10),
-            _buildMoedaFunctionCard('Modo Streamer', 'Protege contra gravação de tela', 50),
+            _buildFunctionCardWithSlider('Aim Scope', 'Melhora a mira com Scope.', 6), // Função com slider
+            const SizedBox(height: 10),
+            _buildFunctionCardWithSlider('Aim Neck', 'Ajusta a mira no pescoço.', 7),  // Função com slider
           ],
         ),
       ),
@@ -293,7 +335,7 @@ class _FuncoesScreenState extends State<FuncoesScreen> {
                 Text(
                   title,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.montserrat(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -303,7 +345,7 @@ class _FuncoesScreenState extends State<FuncoesScreen> {
                 Text(
                   subtitle,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.montserrat(
                     fontSize: 14,
                     color: Colors.grey,
                   ),
@@ -354,6 +396,10 @@ class _FuncoesScreenState extends State<FuncoesScreen> {
   }
 
   Widget _buildFunctionCardWithSlider(String title, String subtitle, int index) {
+    double sliderValue = index == 6 ? _aimScopeEficacia : index == 7 ? _aimNeckEficacia : _sensibilidadeEficacia;
+    bool isPurchased = _activeFunctions.contains(title);
+    int cost = index == 6 ? 80 : 95;  // Definindo o custo para "Aim Scope" e "Aim Neck"
+
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
@@ -370,20 +416,32 @@ class _FuncoesScreenState extends State<FuncoesScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        if (isPurchased)
+                          const Icon(
+                            Icons.verified,
+                            color: Colors.green,
+                            size: 18,
+                          ),
+                        if (isPurchased) const SizedBox(width: 4),
+                        Text(
+                          title,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.montserrat(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Text(
                       subtitle,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.montserrat(
                         fontSize: 14,
                         color: Colors.grey,
                       ),
@@ -391,192 +449,113 @@ class _FuncoesScreenState extends State<FuncoesScreen> {
                   ],
                 ),
               ),
-              _isLoading[index]
-                  ? buildCustomLoader()
+              isPurchased
+                  ? _isLoading[index]
+                      ? buildCustomLoader()
+                      : GestureDetector(
+                          onTap: () {
+                            showActionSheet(context, index, title, _selectedOptions[index], _toggleOption, _toggleAntiGravacao);
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            height: 24,
+                            width: 24,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: _selectedOptions[index]
+                                  ? const LinearGradient(
+                                      colors: [Color(0xFFBB86FC), Color(0xFF6200EE)],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    )
+                                  : null,
+                              border: Border.all(
+                                color: _selectedOptions[index] ? Colors.transparent : Colors.white,
+                                width: 2,
+                              ),
+                            ),
+                            child: AnimatedOpacity(
+                              opacity: _selectedOptions[index] ? 1.0 : 0.0,
+                              duration: const Duration(milliseconds: 300),
+                              child: _selectedOptions[index]
+                                  ? const Icon(
+                                      Icons.check,
+                                      size: 16,
+                                      color: Colors.white,
+                                    )
+                                  : null,
+                            ),
+                          ),
+                        )
                   : GestureDetector(
                       onTap: () {
-                        showActionSheet(context, index, title, _selectedOptions[index], _toggleOption, _toggleAntiGravacao);
+                        setState(() {
+                          _isLoading[index] = true;
+                        });
+                        _purchaseFunctionWithCoins(title, cost, () {
+                          setState(() {
+                            _isLoading[index] = false;
+                            _selectedOptions[index] = true;
+                            _activeFunctions.add(title);
+                          });
+                        }, index); // Certifique-se de passar o índice aqui também
                       },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        height: 24,
-                        width: 24,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: _selectedOptions[index]
-                              ? const LinearGradient(
+                      child: _isLoading[index]
+                          ? buildCustomLoader()
+                          : Container(
+                              padding: const EdgeInsets.all(8.0),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
                                   colors: [Color(0xFFBB86FC), Color(0xFF6200EE)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                )
-                              : null,
-                          border: Border.all(
-                            color: _selectedOptions[index] ? Colors.transparent : Colors.white,
-                            width: 2,
-                          ),
-                        ),
-                        child: AnimatedOpacity(
-                          opacity: _selectedOptions[index] ? 1.0 : 0.0,
-                          duration: const Duration(milliseconds: 300),
-                          child: _selectedOptions[index]
-                              ? const Icon(
-                                  Icons.check,
-                                  size: 16,
-                                  color: Colors.white,
-                                )
-                              : null,
-                        ),
-                      ),
+                                ),
+                                borderRadius: BorderRadius.circular(8.0),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.monetization_on,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '$cost',
+                                    style: GoogleFonts.montserrat(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                     ),
             ],
           ),
           const SizedBox(height: 8),
-          _selectedOptions[index]
+          // Exibe o slider somente se a função estiver ativa e comprada
+          isPurchased && _selectedOptions[index]
               ? Slider(
-                  value: _sensibilidadeEficacia,
+                  value: sliderValue,
                   min: 0,
-                  max: 50,
-                  divisions: 50,
-                  label: _sensibilidadeEficacia.round().toString(),
+                  max: 20,
+                  divisions: 20,
+                  label: sliderValue.round().toString(),
                   onChanged: (value) {
                     setState(() {
-                      _sensibilidadeEficacia = value;
+                      if (index == 6) {
+                        _aimScopeEficacia = value;
+                        _saveAimScopeEficacia(value);
+                      } else if (index == 7) {
+                        _aimNeckEficacia = value;
+                        _saveAimNeckEficacia(value);
+                      } else {
+                        _sensibilidadeEficacia = value;
+                        _saveSensibilidadeEficacia(value);
+                      }
                     });
-                    _saveSensibilidadeEficacia(value);
                   },
                 )
               : Container(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMoedaFunctionCard(String title, String subtitle, int cost) {
-    bool isPurchased = _activeFunctions.contains(title);
-
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: const Color(0xFF14141a),
-        borderRadius: BorderRadius.circular(12.0),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Flexible(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    if (isPurchased)
-                      const Icon(
-                        Icons.verified,
-                        color: Colors.green,
-                        size: 18,
-                      ),
-                    if (isPurchased) const SizedBox(width: 4),
-                    Text(
-                      title,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  subtitle,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          GestureDetector(
-            onTap: isPurchased
-                ? () {
-                    showActionSheet(context, 3, title, _isAntiGravacaoActivated, _toggleOption, _toggleAntiGravacao);
-                  }
-                : () {
-                    setState(() {
-                      _isAntiGravacaoLoading = true;
-                    });
-                    _purchaseFunctionWithCoins(title, cost).then((_) {
-                      setState(() {
-                        _isAntiGravacaoLoading = false;
-                      });
-                    });
-                  },
-            child: isPurchased
-                ? _isAntiGravacaoLoading
-                    ? buildCustomLoader()
-                    : AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        height: 24,
-                        width: 24,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: _isAntiGravacaoActivated
-                              ? const LinearGradient(
-                                  colors: [Color(0xFFBB86FC), Color(0xFF6200EE)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                )
-                              : null,
-                          border: Border.all(
-                            color: _isAntiGravacaoActivated ? Colors.transparent : Colors.white,
-                            width: 2,
-                          ),
-                        ),
-                        child: AnimatedOpacity(
-                          opacity: _isAntiGravacaoActivated ? 1.0 : 0.0,
-                          duration: const Duration(milliseconds: 300),
-                          child: _isAntiGravacaoActivated
-                              ? const Icon(
-                                  Icons.check,
-                                  size: 16,
-                                  color: Colors.white,
-                                )
-                              : null,
-                        ),
-                      )
-                : _isAntiGravacaoLoading
-                    ? buildCustomLoader()
-                    : Container(
-                        padding: const EdgeInsets.all(8.0),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFBB86FC), Color(0xFF6200EE)],
-                          ),
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.monetization_on,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '$cost',
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-          ),
         ],
       ),
     );

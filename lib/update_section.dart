@@ -18,7 +18,7 @@ class UpdateSection extends StatelessWidget {
           tilePadding: const EdgeInsets.symmetric(horizontal: 16.0), // Remove o padding indesejado
           title: Text(
             'Atualização 1.0.0',
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.montserrat(
               color: Colors.white,
               fontWeight: FontWeight.bold,
             ),
@@ -36,7 +36,7 @@ class UpdateSection extends StatelessWidget {
                   '• Melhorias de desempenho\n'
                   '• Novas funcionalidades adicionadas\n'
                   '• Melhorias na interface\n',
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.montserrat(
                     color: Colors.grey,
                     fontSize: 14,
                   ),

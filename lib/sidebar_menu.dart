@@ -21,11 +21,11 @@ class SidebarMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FractionallySizedBox(
-      widthFactor: 0.65, // Define a largura do sidebar para 65% da largura da tela
+      widthFactor: 0.65,
       child: Drawer(
         child: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
               colors: [
                 Color(0xFF1e1e26),
                 Color(0xFF1a1a20),
@@ -37,57 +37,73 @@ class SidebarMenu extends StatelessWidget {
           ),
           child: Column(
             children: [
-              // Espaçamento para o status bar
               SizedBox(height: MediaQuery.of(context).padding.top),
               
-              // Botão de fechar (ícone de X) ajustado logo abaixo do status bar
-              Align(
-                alignment: Alignment.topRight,
-                child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Fecha o drawer corretamente
-                  },
+              // Foto de perfil com gradiente
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    width: 4,
+                    color: Colors.transparent,
+                  ),
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFFBB86FC),
+                      Color(0xFF6200EE),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 40,
+                  backgroundImage: NetworkImage(profileImageUrl),
                 ),
               ),
+              
               const SizedBox(height: 10),
               
-              // Foto de perfil e informações
-              CircleAvatar(
-                radius: 40,
-                backgroundImage: NetworkImage(profileImageUrl),
-              ),
-              const SizedBox(height: 10),
               Text(
-                keyData, // Exibe apenas a chave
-                style: GoogleFonts.poppins(
+                keyData,
+                style: GoogleFonts.montserrat( // Alteração para Montserrat
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              
               const SizedBox(height: 5),
               
-              // Certifique-se de que a data esteja corretamente formatada aqui
               Text(
                 expiryDate != 'Data não definida' ? 'Validade: $expiryDate' : 'Data não definida',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.montserrat( // Alteração para Montserrat
                   color: Colors.white.withOpacity(0.8),
                   fontSize: 14,
                 ),
               ),
+              
               const SizedBox(height: 20),
               
+              // Divisor com menos transparência
               const Divider(
-                color: Colors.white54,
+                color: Colors.grey, 
                 height: 1,
-              ), // Divisor entre infos e itens do menu
+              ),
               
               const SizedBox(height: 10),
               
-              _buildMenuItem(context, index: 0, icon: Icons.home_outlined, label: 'Início'),
-              _buildMenuItem(context, index: 1, icon: Icons.widgets_outlined, label: 'Funções'),
-              _buildMenuItem(context, index: 2, icon: Icons.handyman_outlined, label: 'Utilitários'),
+              // Itens de menu com gradiente e proximidade ajustada
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  children: [
+                    _buildMenuItem(context, index: 0, icon: Icons.home_outlined, label: 'Início'),
+                    _buildMenuItem(context, index: 1, icon: Icons.widgets_outlined, label: 'Funções'),
+                    _buildMenuItem(context, index: 2, icon: Icons.handyman_outlined, label: 'Utilitários'),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -95,7 +111,8 @@ class SidebarMenu extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuItem(BuildContext context, {
+  Widget _buildMenuItem(
+    BuildContext context, {
     required int index,
     required IconData icon,
     required String label,
@@ -103,35 +120,29 @@ class SidebarMenu extends StatelessWidget {
     final bool isSelected = selectedIndex == index;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // Margem entre os itens
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2), // Itens mais juntos
       decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFF14141a) : Colors.transparent, // Cor de fundo para o item selecionado
-        borderRadius: BorderRadius.circular(12), // Cantos arredondados
+        color: isSelected ? const Color(0xFF14141a).withOpacity(0.8) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
-        leading: isSelected
-            ? ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [Color(0xFFBB86FC), Color(0xFF6200EE)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ).createShader(bounds),
-                child: Icon(
-                  icon,
-                  color: Colors.white, // O ícone preenchido com o gradiente
-                  size: 24,
-                ),
-              )
-            : Icon(
-                icon,
-                color: Colors.white.withOpacity(0.8), // Ícones brancos quando não selecionados
-                size: 24,
-              ),
+        leading: ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [Color(0xFFBB86FC), Color(0xFF6200EE)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ).createShader(bounds),
+          child: Icon(
+            icon,
+            color: Colors.white,
+            size: 24,
+          ),
+        ),
         title: Text(
           label,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.montserrat( // Alteração para Montserrat
             fontSize: 14,
-            color: Colors.white, // Texto sempre branco para os itens
+            color: Colors.white,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           ),
         ),

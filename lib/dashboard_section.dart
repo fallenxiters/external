@@ -242,11 +242,11 @@ class _DashboardSectionState extends State<DashboardSection> with SingleTickerPr
           ListTile(
             title: Text(
               'Key',
-              style: GoogleFonts.poppins(color: Colors.white),
+              style: GoogleFonts.montserrat(color: Colors.white),
             ),
             trailing: Text(
               _keyValue ?? 'N/A',
-              style: GoogleFonts.poppins(color: Colors.grey, fontSize: 16),
+              style: GoogleFonts.montserrat(color: Colors.grey, fontSize: 16),
             ),
           ),
           Container(
@@ -256,11 +256,11 @@ class _DashboardSectionState extends State<DashboardSection> with SingleTickerPr
           ListTile(
             title: Text(
               'Vendedor',
-              style: GoogleFonts.poppins(color: Colors.white),
+              style: GoogleFonts.montserrat(color: Colors.white),
             ),
             trailing: Text(
               _seller ?? 'N/A',
-              style: GoogleFonts.poppins(color: Colors.grey, fontSize: 16),
+              style: GoogleFonts.montserrat(color: Colors.grey, fontSize: 16),
             ),
           ),
           Container(
@@ -270,11 +270,11 @@ class _DashboardSectionState extends State<DashboardSection> with SingleTickerPr
           ListTile(
             title: Text(
               'Validade',
-              style: GoogleFonts.poppins(color: Colors.white),
+              style: GoogleFonts.montserrat(color: Colors.white),
             ),
             trailing: Text(
               _expiryDate ?? 'N/A',
-              style: GoogleFonts.poppins(color: Colors.grey, fontSize: 16),
+              style: GoogleFonts.montserrat(color: Colors.grey, fontSize: 16),
             ),
           ),
         ],
@@ -390,7 +390,7 @@ class _DashboardSectionState extends State<DashboardSection> with SingleTickerPr
           children: [
             Text(
               'Resgatar Moedas Diariamente',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.montserrat(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -399,7 +399,7 @@ class _DashboardSectionState extends State<DashboardSection> with SingleTickerPr
             const SizedBox(height: 8),
             Text(
               'Faça login e resgate suas moedas a cada 24 horas.',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.montserrat(
                 fontSize: 14,
                 color: Colors.grey,
               ),
@@ -414,7 +414,7 @@ class _DashboardSectionState extends State<DashboardSection> with SingleTickerPr
                     const SizedBox(width: 5),
                     Text(
                       '10',
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.montserrat(
                         color: Colors.white,
                         fontSize: 16,
                       ),
@@ -435,7 +435,7 @@ class _DashboardSectionState extends State<DashboardSection> with SingleTickerPr
                     child: Center(
                       child: Text(
                         canClaim ? 'Resgatar' : _formatTime(timeRemaining),
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.montserrat(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -478,7 +478,7 @@ class SectionTitle extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Text(
         title,
-        style: GoogleFonts.poppins(
+        style: GoogleFonts.montserrat(
           fontSize: 18,
           fontWeight: FontWeight.bold,
           color: Colors.white,
