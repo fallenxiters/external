@@ -9,6 +9,7 @@ class WebSocketService {
   Function(String, String, String)? onUserDataUpdated; // Chave, Vendedor, Data
   Function(bool, int)? onMissionUpdate;
   Function(List<String>)? onFunctionsUpdated;
+  Function(List<Map<String, dynamic>>)? onSensibilidadesUpdated; // Callback para sensibilidades
 
   WebSocketService({
     required this.keyValue,
@@ -17,6 +18,7 @@ class WebSocketService {
     this.onUserDataUpdated,
     this.onMissionUpdate,
     this.onFunctionsUpdated,
+    this.onSensibilidadesUpdated,
   });
 
   // Método para conectar ao WebSocket
@@ -29,7 +31,6 @@ class WebSocketService {
 
       _channel!.stream.listen(
         (message) {
-          print('Mensagem recebida: $message');
           final data = jsonDecode(message);
 
           if (data['message'] == 'success' || data['message'] == 'update') {
@@ -59,26 +60,21 @@ class WebSocketService {
           } else if (data['message'] == 'update_coins') {
             int coins = data['coins'] ?? 0;
             onCoinsUpdated(coins);
-            print('Moedas atualizadas: $coins');
-          } else {
-            onError('Mensagem de erro recebida: ${data['message']}');
-            print('Erro: Mensagem de erro recebida: ${data['message']}');
+          } else if (data['message'] == 'sensibilidades_update') {  // Adicionando lógica de sensibilidades
+            if (onSensibilidadesUpdated != null) {
+              onSensibilidadesUpdated!(List<Map<String, dynamic>>.from(data['sensibilidades']));
+            }
           }
         },
         onError: (error) {
-          onError('Erro no WebSocket: $error');
-          print('Erro no WebSocket: $error');
           reconnect();
         },
         onDone: () {
-          print('WebSocket connection closed. Reconnecting...');
           reconnect();
         },
         cancelOnError: false,
       );
     } catch (e) {
-      onError('Erro ao conectar com o WebSocket: $e');
-      print('Erro ao conectar com o WebSocket: $e');
       reconnect();
     }
   }
@@ -105,7 +101,6 @@ class WebSocketService {
   void claimMission(String key, int missionId) {
     if (key.isNotEmpty) {
       _channel?.sink.add(jsonEncode({'action': 'claim_mission', 'user_key': key, 'mission_id': missionId}));
-      print('Solicitação para resgatar missão enviada: key=$key, missionId=$missionId');
     } else {
       onError('Chave do usuário está vazia. Não é possível resgatar a missão.');
     }
@@ -121,7 +116,6 @@ class WebSocketService {
   void close() {
     if (_channel != null) {
       _channel!.sink.close();
-      print('WebSocket connection closed.');
     }
   }
 }

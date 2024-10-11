@@ -38,8 +38,6 @@ class SidebarMenu extends StatelessWidget {
           child: Column(
             children: [
               SizedBox(height: MediaQuery.of(context).padding.top),
-              
-              // Foto de perfil com gradiente
               Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
@@ -61,46 +59,34 @@ class SidebarMenu extends StatelessWidget {
                   backgroundImage: NetworkImage(profileImageUrl),
                 ),
               ),
-              
               const SizedBox(height: 10),
-              
               Text(
                 keyData,
-                style: GoogleFonts.montserrat( // Alteração para Montserrat
+                style: GoogleFonts.montserrat(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              
               const SizedBox(height: 5),
-              
               Text(
                 expiryDate != 'Data não definida' ? 'Validade: $expiryDate' : 'Data não definida',
-                style: GoogleFonts.montserrat( // Alteração para Montserrat
+                style: GoogleFonts.montserrat(
                   color: Colors.white.withOpacity(0.8),
                   fontSize: 14,
                 ),
               ),
-              
               const SizedBox(height: 20),
-              
-              // Divisor com menos transparência
-              const Divider(
-                color: Colors.grey, 
-                height: 1,
-              ),
-              
+              const Divider(color: Colors.grey, height: 1),
               const SizedBox(height: 10),
-              
-              // Itens de menu com gradiente e proximidade ajustada
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   children: [
                     _buildMenuItem(context, index: 0, icon: Icons.home_outlined, label: 'Início'),
                     _buildMenuItem(context, index: 1, icon: Icons.widgets_outlined, label: 'Funções'),
-                    _buildMenuItem(context, index: 2, icon: Icons.handyman_outlined, label: 'Utilitários'),
+                    _buildMenuItem(context, index: 2, icon: Icons.settings_outlined, label: 'Métodos'),
+                    _buildMenuItem(context, index: 3, icon: Icons.settings_input_antenna, label: 'Gerar Sensibilidade'),
                   ],
                 ),
               ),
@@ -119,39 +105,44 @@ class SidebarMenu extends StatelessWidget {
   }) {
     final bool isSelected = selectedIndex == index;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2), // Itens mais juntos
-      decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFF14141a).withOpacity(0.8) : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ListTile(
-        leading: ShaderMask(
-          shaderCallback: (bounds) => const LinearGradient(
-            colors: [Color(0xFFBB86FC), Color(0xFF6200EE)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ).createShader(bounds),
-          child: Icon(
-            icon,
-            color: Colors.white,
-            size: 24,
-          ),
+    // Verificação de limites para evitar RangeError
+    if (index >= 0 && index < 4) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF14141a).withOpacity(0.8) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
         ),
-        title: Text(
-          label,
-          style: GoogleFonts.montserrat( // Alteração para Montserrat
-            fontSize: 14,
-            color: Colors.white,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+        child: ListTile(
+          leading: ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              colors: [Color(0xFFBB86FC), Color(0xFF6200EE)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ).createShader(bounds),
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 24,
+            ),
           ),
+          title: Text(
+            label,
+            style: GoogleFonts.montserrat(
+              fontSize: 14,
+              color: Colors.white,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            ),
+          ),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onItemTapped(index);
+            Navigator.pop(context); // Fecha o Drawer após selecionar
+          },
         ),
-        onTap: () {
-          HapticFeedback.lightImpact();
-          onItemTapped(index);
-          Navigator.pop(context); // Fecha o Drawer após selecionar
-        },
-      ),
-    );
+      );
+    } else {
+      return Container(); // Retorna um widget vazio se o índice estiver fora do limite
+    }
   }
 }

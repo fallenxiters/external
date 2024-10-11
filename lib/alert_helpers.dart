@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart'; // Import para HapticFeedback
+import 'package:url_launcher/url_launcher.dart';
+
 
 // Função para mostrar alerta de sucesso
 Future<void> showSuccessSheet(BuildContext context, String message) async {
@@ -204,6 +206,93 @@ Future<void> showActionSheet(
                           // Vibração de alerta ao clicar em Cancelar
                           HapticFeedback.lightImpact();
                           Navigator.of(context).pop(false);  // Cancela a ação
+                        },
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.0),
+                          ),
+                        ),
+                        child: Text(
+                          'Cancelar',
+                          style: GoogleFonts.montserrat(fontSize: 16, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+// Função para mostrar alerta com as opções de instalar ou cancelar
+Future<void> showInstallSheet(BuildContext context, String message, String storeUrl) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    barrierColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (BuildContext context) {
+      // Vibração de alerta
+      HapticFeedback.vibrate();
+
+      return SafeArea(
+        bottom: true,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0), // Largura garantida
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF1e1e26),
+              borderRadius: BorderRadius.circular(20.0), // Arredondando todos os cantos
+              border: Border.all(color: Colors.red.withOpacity(0.5), width: 2.0),
+            ),
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  message,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 18,
+                    color: Colors.redAccent,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          // Vibração de alerta ao clicar no botão
+                          HapticFeedback.lightImpact();
+                          Navigator.of(context).pop();
+                          launch(storeUrl); // Abre a loja de aplicativos para instalar o app
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.0),
+                          ),
+                        ),
+                        child: Text(
+                          'Instalar',
+                          style: GoogleFonts.montserrat(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () {
+                          // Vibração de alerta ao clicar em Cancelar
+                          HapticFeedback.lightImpact();
+                          Navigator.of(context).pop();
                         },
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.white,

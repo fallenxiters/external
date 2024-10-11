@@ -64,16 +64,17 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  // Função para formatar as moedas
-  String _formatCoins(int coins) {
-    if (coins >= 1000000) {
-      return '${(coins / 1000000).toStringAsFixed(1)}M'; // Exibe como '1.0M'
-    } else if (coins >= 1000) {
-      return '${(coins / 1000).toStringAsFixed(1)}K'; // Exibe como '10.1K'
-    } else {
-      return coins.toString(); // Exibe o valor normal se for menor que 1000
-    }
+// Função para formatar as moedas
+String _formatCoins(int coins) {
+  if (coins >= 1000000) {
+    return '${(coins / 1000000).toStringAsFixed(2)}M'; // Exibe como '1.57M'
+  } else if (coins >= 1000) {
+    return '${(coins / 1000).toStringAsFixed(2)}K'; // Exibe como '1.57K'
+  } else {
+    return coins.toString(); // Exibe o valor normal se for menor que 1000
   }
+}
+
 
   @override
   Size get preferredSize => const Size.fromHeight(45); // Altura ainda menor do AppBar com o divisor

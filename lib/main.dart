@@ -6,9 +6,10 @@ import 'dashboard_section.dart';
 import 'login_screen.dart';
 import 'sidebar_menu.dart';
 import 'custom_header.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'funcoes_screen.dart';
 import 'splash_screen.dart';
+import 'gerar_sensibilidade_screen.dart'; // Importe a nova tela "Gerar Sensibilidade"
+import 'package:flutter_localizations/flutter_localizations.dart'; // Adicione esta linha
 
 void main() {
   runApp(MyApp());
@@ -62,7 +63,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>(); // Chave para o Scaffold
   int _selectedIndex = 0;
-  final List<String> _titles = ['Início', 'Funções', 'Utilitários'];
+  final List<String> _titles = ['Início', 'Funções', 'Métodos', 'Gerar Sensibilidade']; // Ajuste nos títulos
   late List<Widget> _screens;
   int? _coins;
   String? key;
@@ -95,10 +96,11 @@ class _MyHomePageState extends State<MyHomePage> {
       const FuncoesScreen(),
       Center(
         child: Text(
-          'Utilitários',
+          'Métodos',
           style: GoogleFonts.poppins(fontSize: 24, color: Colors.white),
         ),
       ),
+      const GerarSensibilidadeScreen(), // Adiciona a tela de Gerar Sensibilidade
     ];
   }
 
@@ -213,7 +215,7 @@ class _MyHomePageState extends State<MyHomePage> {
         profileImageUrl: 'https://example.com/your-profile-image.jpg', // URL da imagem de perfil
       ),
       appBar: CustomHeader(
-        title: _titles[_selectedIndex],
+        title: _titles[_selectedIndex], // Garantindo que o título corresponde ao índice correto
         coins: _coins ?? 0,
         onMenuTap: () {
           _scaffoldKey.currentState?.openDrawer(); // Abrindo o drawer via GlobalKey
