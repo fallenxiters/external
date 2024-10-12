@@ -11,12 +11,14 @@ class GerarSensibilidadeScreen extends StatefulWidget {
   const GerarSensibilidadeScreen({Key? key}) : super(key: key);
 
   @override
-  _GerarSensibilidadeScreenState createState() => _GerarSensibilidadeScreenState();
+  _GerarSensibilidadeScreenState createState() =>
+      _GerarSensibilidadeScreenState();
 }
 
 class _GerarSensibilidadeScreenState extends State<GerarSensibilidadeScreen> {
   List<Map<String, dynamic>> _sensibilidadesGeradas = [];
   bool _isArquivoExpanded = false;
+  bool _isLoading = false; // Variável para controlar o estado de carregamento
   String _selectedSpeed = 'Média';
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   String? _userKey;
@@ -60,77 +62,85 @@ class _GerarSensibilidadeScreenState extends State<GerarSensibilidadeScreen> {
   }
 
   Map<String, int> _generateSensibilidade(String speed) {
-    int minValue, maxValue;
     if (speed == 'Rápida') {
-      minValue = 150;
-      maxValue = 200;
+      return {
+        'Geral': _generateRandomValue(175, 200),
+        'Ponto Vermelho': _generateRandomValue(140, 190),
+        'Mira 2x': _generateRandomValue(180, 200),
+        'Mira 4x': _generateRandomValue(180, 200),
+        'Mira AWM': _generateRandomValue(45, 60),
+        'Olhadinha': _generateRandomValue(180, 200),
+      };
     } else if (speed == 'Média') {
-      minValue = 80;
-      maxValue = 150;
+      return {
+        'Geral': _generateRandomValue(135, 175),
+        'Ponto Vermelho': _generateRandomValue(125, 140),
+        'Mira 2x': _generateRandomValue(140, 180),
+        'Mira 4x': _generateRandomValue(140, 180),
+        'Mira AWM': _generateRandomValue(30, 45),
+        'Olhadinha': _generateRandomValue(140, 180),
+      };
     } else {
-      minValue = 0;
-      maxValue = 80;
+      return {
+        'Geral': _generateRandomValue(90, 135),
+        'Ponto Vermelho': _generateRandomValue(95, 125),
+        'Mira 2x': _generateRandomValue(110, 140),
+        'Mira 4x': _generateRandomValue(110, 140),
+        'Mira AWM': _generateRandomValue(10, 30),
+        'Olhadinha': _generateRandomValue(110, 140),
+      };
     }
-
-    return {
-      'Geral': _generateRandomValue(minValue, maxValue),
-      'Ponto Vermelho': _generateRandomValue(minValue, maxValue),
-      'Mira 2x': _generateRandomValue(minValue, maxValue),
-      'Mira 4x': _generateRandomValue(minValue, maxValue),
-      'Mira AWM': _generateRandomValue(minValue, maxValue),
-      'Olhadinha': _generateRandomValue(minValue, maxValue),
-    };
   }
 
   int _generateRandomValue(int min, int max) {
     return Random().nextInt(max - min + 1) + min;
   }
 
-Future<void> gerarSensibilidade(String tipo, int cost, String category) async {
-  if (_userKey == null) {
-    await showErrorSheet(context, 'Erro: Chave de usuário não carregada.');
-    return;
-  }
-
-  final url = Uri.parse('https://mikeregedit.glitch.me/api/gerar_sensibilidade');
-  var novaSensibilidade = _generateSensibilidade(_selectedSpeed);
-
-  final response = await http.post(
-    url,
-    headers: {"Content-Type": "application/json"},
-    body: jsonEncode({
-      "key": _userKey,
-      "tipo": tipo,
-      "category": category,
-      "geral": novaSensibilidade['Geral'],
-      "pontoVermelho": novaSensibilidade['Ponto Vermelho'],
-      "mira2x": novaSensibilidade['Mira 2x'],
-      "mira4x": novaSensibilidade['Mira 4x'],
-      "miraAWM": novaSensibilidade['Mira AWM'],
-      "olhadinha": novaSensibilidade['Olhadinha'],
-      "cost": cost,
-    }),
-  );
-
-  if (response.statusCode == 200) {
-    final data = jsonDecode(response.body);
-    if (data['success']) {
-      // Usa o alerta de sucesso do alert_helpers.dart
-      await showSuccessSheet(context, data['message']);
-    } else {
-      await showErrorSheet(context, data['message']);
+  Future<void> gerarSensibilidade(String tipo, int cost, String category) async {
+    if (_userKey == null) {
+      await showErrorSheet(context, 'Erro: Chave de usuário não carregada.');
+      return;
     }
-  } else if (response.statusCode == 400 || response.statusCode == 500) {
-    // Mensagem de erro do servidor
-    final data = jsonDecode(response.body);
-    await showErrorSheet(context, data['message']);
-  } else {
-    // Erro genérico para outros status
-    await showErrorSheet(context, 'Erro no servidor. Tente novamente mais tarde.');
+
+    setState(() {
+      _isLoading = true; // Iniciar carregamento
+    });
+
+    final url = Uri.parse('https://mikeregedit.glitch.me/api/gerar_sensibilidade');
+    var novaSensibilidade = _generateSensibilidade(_selectedSpeed);
+
+    final response = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "key": _userKey,
+        "tipo": tipo,
+        "category": category,
+        "geral": novaSensibilidade['Geral'],
+        "pontoVermelho": novaSensibilidade['Ponto Vermelho'],
+        "mira2x": novaSensibilidade['Mira 2x'],
+        "mira4x": novaSensibilidade['Mira 4x'],
+        "miraAWM": novaSensibilidade['Mira AWM'],
+        "olhadinha": novaSensibilidade['Olhadinha'],
+        "cost": cost,
+      }),
+    );
+
+    setState(() {
+      _isLoading = false; // Finalizar carregamento
+    });
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['success']) {
+        await showSuccessSheet(context, data['message']);
+      } else {
+        await showErrorSheet(context, data['message']);
+      }
+    } else {
+      await showErrorSheet(context, 'Erro no servidor. Tente novamente mais tarde.');
+    }
   }
-}
-
-
 
   Widget _buildSensibilidadeSelector() {
     return DropdownButton<String>(
@@ -154,50 +164,62 @@ Future<void> gerarSensibilidade(String tipo, int cost, String category) async {
     );
   }
 
-  Widget _buildGenerateButton(int cost, String tipo, String category) {
-    return Container(
-      width: 400,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFBB86FC), Color(0xFF6200EE)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
+Widget _buildGenerateButton(int cost, String tipo, String category) {
+  return Container(
+    width: 400,
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        colors: [Color(0xFFBB86FC), Color(0xFF6200EE)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
       ),
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        backgroundColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
         ),
-        onPressed: () {
-          gerarSensibilidade(_selectedSpeed, cost, category);
-        },
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '$cost',
-              style: GoogleFonts.montserrat(
-                fontSize: 16,
-                color: Colors.white,
+      ),
+      onPressed: _isLoading
+          ? null // Desabilitar o botão durante o carregamento
+          : () {
+              gerarSensibilidade(_selectedSpeed, cost, category);
+            },
+      child: _isLoading
+          ? SizedBox(
+              height: 16,  // Menor altura
+              width: 16,   // Menor largura
+              child: CircularProgressIndicator(
+                strokeWidth: 2, // Fino
+                color: Colors.white, // Indicador de progresso
               ),
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$cost',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 16,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.monetization_on,
+                  color: Colors.amber,
+                  size: 16,
+                ),
+              ],
             ),
-            const SizedBox(width: 4),
-            const Icon(
-              Icons.monetization_on,
-              color: Colors.amber,
-              size: 16,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+    ),
+  );
+}
+
 
   Widget _buildArquivoCard() {
     return Column(
@@ -227,7 +249,9 @@ Future<void> gerarSensibilidade(String tipo, int cost, String category) async {
                   ),
                 ),
                 Icon(
-                  _isArquivoExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                  _isArquivoExpanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
                   color: Colors.white,
                 ),
               ],
@@ -266,11 +290,11 @@ Future<void> gerarSensibilidade(String tipo, int cost, String category) async {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: const Color(0xFF14141a), // Fundo todo na cor desejada
+        color: const Color(0xFF14141a),
         borderRadius: BorderRadius.circular(12.0),
         border: Border.all(
-          color: Colors.grey.shade800, // Cinza escuro para a borda
-          width: 1.0, // Espessura da borda
+          color: Colors.grey.shade800,
+          width: 1.0,
         ),
       ),
       child: Column(

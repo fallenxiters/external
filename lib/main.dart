@@ -8,8 +8,9 @@ import 'sidebar_menu.dart';
 import 'custom_header.dart';
 import 'funcoes_screen.dart';
 import 'splash_screen.dart';
-import 'gerar_sensibilidade_screen.dart'; // Importe a nova tela "Gerar Sensibilidade"
-import 'package:flutter_localizations/flutter_localizations.dart'; // Adicione esta linha
+import 'metodos_screen.dart'; // Importando MetodosScreen
+import 'gerar_sensibilidade_screen.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() {
   runApp(MyApp());
@@ -94,12 +95,7 @@ class _MyHomePageState extends State<MyHomePage> {
         webSocketService: webSocketService,
       ),
       const FuncoesScreen(),
-      Center(
-        child: Text(
-          'Métodos',
-          style: GoogleFonts.poppins(fontSize: 24, color: Colors.white),
-        ),
-      ),
+      const MetodosScreen(), // Certifique-se de carregar a tela de Métodos aqui
       const GerarSensibilidadeScreen(), // Adiciona a tela de Gerar Sensibilidade
     ];
   }
