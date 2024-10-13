@@ -47,6 +47,11 @@
     <true/>
     <key>GADApplicationIdentifier</key>
     <string>ca-app-pub-7365501546750544~3103470862</string>
+    <key>NSAppTransportSecurity</key>
+<dict>
+  <key>NSAllowsArbitraryLoads</key>
+  <true/>
+</dict>
 
 </dict>
 </plist>

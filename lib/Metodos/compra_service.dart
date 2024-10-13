@@ -21,55 +21,33 @@ class CompraService {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['message'] == 'method_bought') {
-        // Exibe uma mensagem de sucesso
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Sucesso!'),
-            content: Text('Método ${data['metodoName']} comprado com sucesso! Saldo restante: ${data['coinsRemaining']} moedas.'),
-            actions: <Widget>[
-              TextButton(
-                child: const Text('OK'),
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                },
-              ),
-            ],
+        print("Método comprado com sucesso!");
+
+        // Use o ScaffoldMessenger para exibir a mensagem, o que evita problemas com o contexto montado
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Método ${data['metodoName']} comprado com sucesso! Saldo restante: ${data['coinsRemaining']} moedas.',
+            ),
+            backgroundColor: Colors.green,
           ),
         );
       } else if (response.statusCode == 400 && data['message'] == 'not_enough_coins') {
-        // Exibe uma mensagem de erro (moedas insuficientes)
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Erro!'),
-            content: Text('Você não tem moedas suficientes. Necessário: ${data['coinsRequired']}, disponível: ${data['coinsAvailable']}.'), 
-            actions: <Widget>[
-              TextButton(
-                child: const Text('OK'),
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                },
-              ),
-            ],
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Você não tem moedas suficientes. Necessário: ${data['coinsRequired']}, disponível: ${data['coinsAvailable']}.',
+            ),
+            backgroundColor: Colors.red,
           ),
         );
       }
     } catch (error) {
-      // Exibe uma mensagem de erro genérica
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Erro!'),
-          content: const Text('Ocorreu um erro ao processar sua solicitação. Tente novamente mais tarde.'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('OK'),
-              onPressed: () {
-                Navigator.of(ctx).pop();
-              },
-            ),
-          ],
+      // Mostrar erro genérico
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ocorreu um erro ao processar sua solicitação. Tente novamente mais tarde.'),
+          backgroundColor: Colors.red,
         ),
       );
     }

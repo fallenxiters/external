@@ -6,10 +6,15 @@ import 'package:url_launcher/url_launcher.dart';
 
 // Função para mostrar alerta de sucesso
 Future<void> showSuccessSheet(BuildContext context, String message) async {
+  if (context == null || !context.mounted) {
+    print("O contexto é nulo ou não está montado, não é possível exibir o alerta.");
+    return;
+  }
+
   await showModalBottomSheet<void>(
     context: context,
     backgroundColor: Colors.transparent,
-    barrierColor: Colors.transparent,
+    barrierColor: Colors.black54, // Certifique-se de que a barreira é visível
     isScrollControlled: true,
     builder: (BuildContext context) {
       // Adiciona uma leve vibração ao aparecer o modal
@@ -18,11 +23,11 @@ Future<void> showSuccessSheet(BuildContext context, String message) async {
       return SafeArea(
         bottom: true,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0), // Largura garantida
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Container(
             decoration: BoxDecoration(
               color: const Color(0xFF1e1e26),
-              borderRadius: BorderRadius.circular(20.0), // Arredondando todos os cantos
+              borderRadius: BorderRadius.circular(20.0),
               border: Border.all(color: Colors.grey.withOpacity(0.5), width: 2.0),
             ),
             padding: const EdgeInsets.all(16.0),
@@ -66,10 +71,15 @@ Future<void> showSuccessSheet(BuildContext context, String message) async {
 
 // Função para mostrar alerta de erro
 Future<void> showErrorSheet(BuildContext context, String message) async {
+  if (context == null || !context.mounted) {
+    print("O contexto é nulo ou não está montado, não é possível exibir o alerta.");
+    return;
+  }
+
   await showModalBottomSheet<void>(
     context: context,
     backgroundColor: Colors.transparent,
-    barrierColor: Colors.transparent,
+    barrierColor: Colors.black54, // Certifique-se de que a barreira é visível
     isScrollControlled: true,
     builder: (BuildContext context) {
       // Vibração de alerta mais forte
@@ -78,11 +88,11 @@ Future<void> showErrorSheet(BuildContext context, String message) async {
       return SafeArea(
         bottom: true,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0), // Largura garantida
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Container(
             decoration: BoxDecoration(
               color: const Color(0xFF1e1e26),
-              borderRadius: BorderRadius.circular(20.0), // Arredondando todos os cantos
+              borderRadius: BorderRadius.circular(20.0),
               border: Border.all(color: Colors.red.withOpacity(0.5), width: 2.0),
             ),
             padding: const EdgeInsets.all(16.0),
