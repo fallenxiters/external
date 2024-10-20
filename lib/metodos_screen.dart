@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/services.dart';
-import 'package:video_player/video_player.dart'; // Importação do pacote para player de vídeo
+import 'Metodos/video_helper.dart';  // Importa o arquivo correto para usar playVideo
 import 'websocket_service.dart';
 import 'Metodos/compra_service.dart';
-import 'Metodos/video_player.dart';
 import 'alert_helpers.dart';
 
 class MetodosScreen extends StatefulWidget {
@@ -18,7 +17,7 @@ class MetodosScreen extends StatefulWidget {
 class _MetodosScreenState extends State<MetodosScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  List<String> purchasedMethods = [];
+  List<String> purchasedMethods = []; // Inicializa a lista de métodos comprados
   late WebSocketService webSocketService;
 
   @override
@@ -33,8 +32,9 @@ class _MetodosScreenState extends State<MetodosScreen>
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
 
+    String? userKey = await FlutterSecureStorage().read(key: 'user_key');
     webSocketService = WebSocketService(
-      keyValue: (await FlutterSecureStorage().read(key: 'user_key')) ?? 'default_user_key',
+      keyValue: userKey ?? 'default_user_key',
       onCoinsUpdated: (coins) {},
       onError: (error) {},
       onPurchasedMethodsUpdated: (List<String> methods) {
@@ -55,83 +55,6 @@ class _MetodosScreenState extends State<MetodosScreen>
   bool isPurchased(String metodo) {
     return purchasedMethods.contains(metodo);
   }
-
-void _playVideo(String videoUrl, String videoTitle, {bool isLendario = false}) {
-  Duration requiredWatchDuration;
-
-  // Defina a duração do vídeo com base no título
-  switch (videoTitle) {
-    case 'GlooWall':
-      requiredWatchDuration = const Duration(minutes: 2, seconds: 29);
-      break;
-    case 'Desert Trick':
-      requiredWatchDuration = const Duration(minutes: 7, seconds: 57);
-      break;
-    case 'Trick 2x':
-      requiredWatchDuration = const Duration(minutes: 1, seconds: 19);
-      break;
-    default:
-      requiredWatchDuration = const Duration(minutes: 2); // Defina uma duração padrão se necessário
-      break;
-  }
-
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (context) {
-      return Container(
-        height: MediaQuery.of(context).size.height * 0.6, // Ajuste da altura do BottomSheet (60% da tela)
-        margin: const EdgeInsets.all(4.0), // Margem para criar o espaço para a borda dourada
-        decoration: BoxDecoration(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(25.0)),
-          border: isLendario
-              ? Border.all(
-                  color: Colors.amber, // Cor dourada para métodos lendários
-                  width: 2.0, // Tamanho da borda dourada
-                )
-              : null, // Sem borda para métodos normais
-        ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(25.0)),
-          child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF1e1e26), // Cor superior
-                  Color(0xFF1a1a20), // Cor inferior mais suave
-                  Color(0xFF1e1e26), // Cor inferior
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(25.0)),
-            ),
-            child: VideoPlayerScreen(
-              videoUrl: videoUrl,
-              videoTitle: videoTitle,
-              views: '621 mil visualizações',
-              postDate: 'há 10 meses',
-              requiredWatchDuration: requiredWatchDuration, // Passa o tempo correto
-            ),
-          ),
-        ),
-      );
-    },
-  );
-}
-
-
-
-
-
-
-
-
-
-
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -207,14 +130,13 @@ void _playVideo(String videoUrl, String videoTitle, {bool isLendario = false}) {
                 titulo: 'ControlShot',
                 descricao: 'Ajuda a não passar da cabeça com qualquer arma.',
                 preco: 70,
-                controller: _controller,
                 isPurchased: isPurchased('ControlShot'),
               ),
               _buildMetodoLendarioItem(
                 titulo: 'Botão Trick',
-                descricao: 'Técnicas no botão de atirar para auxiliar acertos de capa, evitar tremidas de mira.',
+                descricao:
+                    'Técnicas no botão de atirar para auxiliar acertos de capa, evitar tremidas de mira.',
                 preco: 100,
-                controller: _controller,
                 isPurchased: isPurchased('Botão Trick'),
               ),
             ],
@@ -274,7 +196,10 @@ void _playVideo(String videoUrl, String videoTitle, {bool isLendario = false}) {
           ),
         ),
         trailing: isControllFull
-            ? const Icon(Icons.arrow_forward_ios, color: Colors.white)
+            ? GestureDetector(
+                onTap: () => playVideo(context, titulo, webSocketService), // Usando a função playVideo corretamente
+                child: const Icon(Icons.arrow_forward_ios, color: Colors.white),
+              )
             : GestureDetector(
                 onTap: () async {
                   final storage = const FlutterSecureStorage();
@@ -291,125 +216,106 @@ void _playVideo(String videoUrl, String videoTitle, {bool isLendario = false}) {
     );
   }
 
-Widget _buildMetodoNormalItem(String titulo, String descricao) {
-  final Map<String, String> videoUrls = {
-    'GlooWall': 'https://cdn.glitch.me/b5afcbc9-18b5-4532-a348-a33994acebec/gloowall.mp4?v=1724951585469',
-    'OneTap': 'https://cdn.glitch.me/b5afcbc9-18b5-4532-a348-a33994acebec/onetap.mp4?v=1724961876143',
-    'Desert Trick': 'https://cdn.glitch.me/b5afcbc9-18b5-4532-a348-a33994acebec/desert%20trick.mp4?v=1724962097864',
-    'Trick 2x': 'https://cdn.glitch.me/b5afcbc9-18b5-4532-a348-a33994acebec/trick%202x.mp4?v=1724962188227',
-  };
-
-  return Card(
-    color: const Color(0xFF14141a),
-    margin: const EdgeInsets.symmetric(vertical: 8),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: ListTile(
-      title: Text(
-        titulo,
-        style: GoogleFonts.montserrat(
-          fontSize: 16,
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-        ),
+  Widget _buildMetodoNormalItem(String titulo, String descricao) {
+    return Card(
+      color: const Color(0xFF14141a),
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
       ),
-      subtitle: Text(
-        descricao,
-        style: GoogleFonts.montserrat(
-          fontSize: 14,
-          color: Colors.white.withOpacity(0.8),
-        ),
-      ),
-      trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white),
-      onTap: () {
-        if (videoUrls.containsKey(titulo)) {
-          _playVideo(videoUrls[titulo]!, titulo); // Chama sem a borda dourada
-        }
-      },
-    ),
-  );
-}
-
-
-Widget _buildMetodoLendarioNormalItem(String titulo, String descricao) {
-  final Map<String, String> videoUrls = {
-    'OneTap': 'https://cdn.glitch.me/b5afcbc9-18b5-4532-a348-a33994acebec/onetap.mp4?v=1724961876143',
-  };
-
-  return Card(
-    margin: const EdgeInsets.symmetric(vertical: 8),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-      side: BorderSide(
-        width: 2,
-        color: Colors.amber.withOpacity(0.8),
-      ),
-    ),
-    color: const Color(0xFF14141a),
-    child: ListTile(
-      title: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            titulo,
-            style: GoogleFonts.montserrat(
-              fontSize: 16,
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
+      child: ListTile(
+        title: Text(
+          titulo,
+          style: GoogleFonts.montserrat(
+            fontSize: 16,
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
           ),
-          ShaderMask(
-            shaderCallback: (bounds) {
-              final double slide = _controller.value * 2 - 1;
-              return LinearGradient(
-                colors: [
-                  Colors.amber.shade200,
-                  Colors.amber.withOpacity(1.0),
-                  Colors.amber.shade400,
-                  Colors.amber.withOpacity(1.0),
-                  Colors.amber.shade200,
-                ],
-                stops: const [0.0, 0.4, 0.5, 0.6, 1.0],
-                begin: Alignment(-1.5 + slide, 0),
-                end: Alignment(1.5 + slide, 0),
-              ).createShader(bounds);
-            },
-            child: Text(
-              ' (Lendário)',
+        ),
+        subtitle: Text(
+          descricao,
+          style: GoogleFonts.montserrat(
+            fontSize: 14,
+            color: Colors.white.withOpacity(0.8),
+          ),
+        ),
+        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white),
+        onTap: () {
+          playVideo(context, titulo, webSocketService); // Usando a função playVideo corretamente
+        },
+      ),
+    );
+  }
+
+  Widget _buildMetodoLendarioNormalItem(String titulo, String descricao) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          width: 2,
+          color: Colors.amber.withOpacity(0.8),
+        ),
+      ),
+      color: const Color(0xFF14141a),
+      child: ListTile(
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              titulo,
               style: GoogleFonts.montserrat(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+                fontSize: 16,
                 color: Colors.white,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ),
-        ],
-      ),
-      subtitle: Text(
-        descricao,
-        style: GoogleFonts.montserrat(
-          fontSize: 14,
-          color: Colors.white.withOpacity(0.8),
+            ShaderMask(
+              shaderCallback: (bounds) {
+                final double slide = _controller.value * 2 - 1;
+                return LinearGradient(
+                  colors: [
+                    Colors.amber.shade200,
+                    Colors.amber.withOpacity(1.0),
+                    Colors.amber.shade400,
+                    Colors.amber.withOpacity(1.0),
+                    Colors.amber.shade200,
+                  ],
+                  stops: const [0.0, 0.4, 0.5, 0.6, 1.0],
+                  begin: Alignment(-1.5 + slide, 0),
+                  end: Alignment(1.5 + slide, 0),
+                ).createShader(bounds);
+              },
+              child: Text(
+                ' (Lendário)',
+                style: GoogleFonts.montserrat(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
         ),
+        subtitle: Text(
+          descricao,
+          style: GoogleFonts.montserrat(
+            fontSize: 14,
+            color: Colors.white.withOpacity(0.8),
+          ),
+        ),
+        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.amber),
+        onTap: () {
+          playVideo(context, titulo, webSocketService, isLendario: true); // Usando a função playVideo corretamente
+        },
       ),
-      trailing: const Icon(Icons.arrow_forward_ios, color: Colors.amber),
-      onTap: () {
-        if (videoUrls.containsKey(titulo)) {
-          _playVideo(videoUrls[titulo]!, titulo, isLendario: true); // Chama com a borda dourada
-        }
-      },
-    ),
-  );
-}
-
-
+    );
+  }
 
   Widget _buildMetodoLendarioItem({
     required String titulo,
     required String descricao,
     required int preco,
-    required AnimationController controller,
     required bool isPurchased,
   }) {
     return Card(
@@ -429,7 +335,7 @@ Widget _buildMetodoLendarioNormalItem(String titulo, String descricao) {
             if (isPurchased)
               ShaderMask(
                 shaderCallback: (bounds) {
-                  final double slide = controller.value * 2 - 1;
+                  final double slide = _controller.value * 2 - 1;
                   return LinearGradient(
                     colors: [Colors.amber.shade200, Colors.amber.shade400],
                     begin: Alignment(-1.5 + slide, 0),
@@ -453,7 +359,7 @@ Widget _buildMetodoLendarioNormalItem(String titulo, String descricao) {
             ),
             ShaderMask(
               shaderCallback: (bounds) {
-                final double slide = controller.value * 2 - 1;
+                final double slide = _controller.value * 2 - 1;
                 return LinearGradient(
                   colors: [
                     Colors.amber.shade200,
@@ -486,7 +392,10 @@ Widget _buildMetodoLendarioNormalItem(String titulo, String descricao) {
           ),
         ),
         trailing: isPurchased
-            ? const Icon(Icons.arrow_forward_ios, color: Colors.amber)
+            ? GestureDetector(
+                onTap: () => playVideo(context, titulo, webSocketService, isLendario: true), // Usando a função playVideo corretamente
+                child: const Icon(Icons.arrow_forward_ios, color: Colors.amber),
+              )
             : GestureDetector(
                 onTap: () async {
                   final storage = const FlutterSecureStorage();
@@ -663,7 +572,7 @@ Widget _buildMetodoLendarioNormalItem(String titulo, String descricao) {
             CompraService().comprarMetodo(context, userKey, metodo, preco).then((_) {
               showSuccessSheet(context, 'Método $metodo comprado com sucesso!');
               setState(() {
-                purchasedMethods.add(metodo);
+                purchasedMethods.add(metodo); // Adicionando o método à lista comprada dentro de setState
               });
             }).catchError((error) {
               showErrorSheet(context, 'Erro ao comprar o método $metodo.');

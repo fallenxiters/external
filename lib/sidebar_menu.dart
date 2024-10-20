@@ -5,17 +5,13 @@ import 'package:google_fonts/google_fonts.dart';
 class SidebarMenu extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onItemTapped;
-  final String keyData;
-  final String expiryDate;
-  final String profileImageUrl;
+  final AnimationController controller; // Adicionando o AnimationController
 
   const SidebarMenu({
     Key? key,
     required this.selectedIndex,
     required this.onItemTapped,
-    required this.keyData,
-    required this.expiryDate,
-    required this.profileImageUrl,
+    required this.controller, // Adicionando o controller aqui
   }) : super(key: key);
 
   @override
@@ -37,59 +33,75 @@ class SidebarMenu extends StatelessWidget {
           ),
           child: Column(
             children: [
+              // Usar um SizedBox para respeitar o SafeArea
               SizedBox(height: MediaQuery.of(context).padding.top),
+              
+              // Seção Dashboard
               Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    width: 4,
-                    color: Colors.transparent,
-                  ),
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFFBB86FC),
-                      Color(0xFF6200EE),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                padding: const EdgeInsets.all(16),
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'DASHBOARD',
+                  style: GoogleFonts.montserrat(
+                    color: Colors.grey, // Cor cinza
+                    fontSize: 14, // Tamanho menor
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                child: CircleAvatar(
-                  radius: 40,
-                  backgroundImage: NetworkImage(profileImageUrl),
+              ),
+              _buildMenuItem(context, index: 0, icon: Icons.home_outlined, label: 'Início'),
+
+              const SizedBox(height: 5), // Espaçamento menor
+
+              // Seção Utilitários
+              Container(
+                padding: const EdgeInsets.all(16),
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'UTILITÁRIOS', // Ajustado para Utilitários
+                  style: GoogleFonts.montserrat(
+                    color: Colors.grey, // Cor cinza
+                    fontSize: 14, // Tamanho menor
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-              const SizedBox(height: 10),
-              Text(
-                keyData,
-                style: GoogleFonts.montserrat(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+              _buildMenuItem(context, index: 1, icon: Icons.widgets_outlined, label: 'Funções'),
+              _buildMenuItem(context, index: 2, icon: Icons.settings_outlined, label: 'Métodos'),
+
+              const SizedBox(height: 5), // Espaçamento menor
+
+              // Seção Geradores
+              Container(
+                padding: const EdgeInsets.all(16),
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'GERADORES',
+                  style: GoogleFonts.montserrat(
+                    color: Colors.grey, // Cor cinza
+                    fontSize: 14, // Tamanho menor
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-              const SizedBox(height: 5),
-              Text(
-                expiryDate != 'Data não definida' ? 'Validade: $expiryDate' : 'Data não definida',
-                style: GoogleFonts.montserrat(
-                  color: Colors.white.withOpacity(0.8),
-                  fontSize: 14,
+              _buildMenuItem(context, index: 3, icon: Icons.settings_input_antenna, label: 'Gerar Sensibilidade'),
+
+              const SizedBox(height: 5), // Espaçamento menor
+
+              // Nova Seção Atividades
+              Container(
+                padding: const EdgeInsets.all(16),
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'ATIVIDADES',
+                  style: GoogleFonts.montserrat(
+                    color: Colors.grey, // Cor cinza
+                    fontSize: 14, // Tamanho menor
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-              const SizedBox(height: 20),
-              const Divider(color: Colors.grey, height: 1),
-              const SizedBox(height: 10),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  children: [
-                    _buildMenuItem(context, index: 0, icon: Icons.home_outlined, label: 'Início'),
-                    _buildMenuItem(context, index: 1, icon: Icons.widgets_outlined, label: 'Funções'),
-                    _buildMenuItem(context, index: 2, icon: Icons.settings_outlined, label: 'Métodos'),
-                    _buildMenuItem(context, index: 3, icon: Icons.settings_input_antenna, label: 'Gerar Sensibilidade'),
-                  ],
-                ),
-              ),
+              _buildMenuItem(context, index: 4, icon: Icons.event, label: 'Eventos'), // Novo item Eventos
             ],
           ),
         ),
@@ -105,8 +117,7 @@ class SidebarMenu extends StatelessWidget {
   }) {
     final bool isSelected = selectedIndex == index;
 
-    // Verificação de limites para evitar RangeError
-    if (index >= 0 && index < 4) {
+    if (index >= 0 && index < 5) { // Aumentar o índice para incluir o novo item "Eventos"
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         decoration: BoxDecoration(
@@ -135,8 +146,8 @@ class SidebarMenu extends StatelessWidget {
             ),
           ),
           onTap: () {
-            HapticFeedback.lightImpact();
-            onItemTapped(index);
+            HapticFeedback.lightImpact(); // Certifique-se de que esta importação está presente
+            onItemTapped(index); // Chama o método correto do MyHomePage
             Navigator.pop(context); // Fecha o Drawer após selecionar
           },
         ),

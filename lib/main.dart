@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'websocket_service.dart';
 import 'dashboard_section.dart';
 import 'login_screen.dart';
 import 'sidebar_menu.dart';
-import 'custom_header.dart';
 import 'funcoes_screen.dart';
 import 'splash_screen.dart';
-import 'metodos_screen.dart'; // Importando MetodosScreen
+import 'metodos_screen.dart';
 import 'gerar_sensibilidade_screen.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'dashed_divider.dart'; // Verifique se este arquivo existe
+import 'custom_header.dart'; // Importando o cabeçalho personalizado
+import 'events_screen.dart'; // Importando a tela de eventos
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -61,29 +64,29 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>(); // Chave para o Scaffold
+class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
-  final List<String> _titles = ['Início', 'Funções', 'Métodos', 'Gerar Sensibilidade']; // Ajuste nos títulos
+  final List<String> _titles = ['Início', 'Funções', 'Métodos', 'Gerar Sensibilidade', 'Eventos'];
   late List<Widget> _screens;
-  int? _coins;
-  String? key;
-  String? seller;
-  String? expiryDate;
-  bool canClaimMission = false;
-  int missionTimeRemaining = 0;
-
   late WebSocketService webSocketService;
   final storage = FlutterSecureStorage();
 
-  bool _isKeyLoaded = false;
-  bool _isSellerLoaded = false;
-  bool _isExpiryDateLoaded = false;
-  bool _areCoinsLoaded = false;
+  String? key;
+  String? seller;
+  String? expiryDate;
+
+  late AnimationController _controller; // Controller para animação
+  int _coins = 0; // Inicialização de moedas
 
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat(); // Animação contínua
+
     _initializeWebSocketService();
 
     _screens = [
@@ -95,8 +98,9 @@ class _MyHomePageState extends State<MyHomePage> {
         webSocketService: webSocketService,
       ),
       const FuncoesScreen(),
-      const MetodosScreen(), // Certifique-se de carregar a tela de Métodos aqui
-      const GerarSensibilidadeScreen(), // Adiciona a tela de Gerar Sensibilidade
+      const MetodosScreen(),
+      const GerarSensibilidadeScreen(),
+      const EventsScreen(), // Adicionando a tela de eventos
     ];
   }
 
@@ -111,72 +115,36 @@ class _MyHomePageState extends State<MyHomePage> {
       webSocketService = WebSocketService(
         keyValue: savedKey,
         onCoinsUpdated: (coins) {
-          if (mounted) {
-            setState(() {
-              _coins = coins;
-              _areCoinsLoaded = true;
-              _checkIfLoadingComplete();
-            });
-          }
+          setState(() {
+            _coins = coins; // Atualizando o número de moedas
+          });
         },
         onError: (error) {
-          if (mounted) {
-            _handleError(error);
-            _checkIfLoadingComplete();
-          }
+          // Lidar com erro
         },
-        onUserDataUpdated: (key, seller, expiryDate) {
-          if (mounted) {
-            setState(() {
-              this.key = key;
-              this.seller = seller;
-              this.expiryDate = expiryDate;
-              _isKeyLoaded = true;
-              _isSellerLoaded = true;
-              _isExpiryDateLoaded = true;
-              _checkIfLoadingComplete();
-            });
-          }
+        onUserDataUpdated: (key, seller, expiryDate, likeDislikeStatus) {
+          setState(() {
+            this.key = key;
+            this.seller = seller;
+            this.expiryDate = expiryDate;
+          });
         },
-        onMissionUpdate: (canClaim, timeRemaining) {
-          if (mounted) {
-            setState(() {
-              canClaimMission = canClaim;
-              missionTimeRemaining = timeRemaining;
-            });
-            _checkIfLoadingComplete();
-          }
+        onMissionUpdate: (missionName, canClaim, timeRemaining) {
+          // Atualização de missões
         },
       );
       webSocketService.connect();
     } else {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
-      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
     }
-  }
-
-  void _checkIfLoadingComplete() {
-    if (_isKeyLoaded && _isSellerLoaded && _isExpiryDateLoaded && _areCoinsLoaded) {
-      // Lógica de carregamento completo
-    }
-  }
-
-  void _handleError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Erro: $message'),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.redAccent,
-      ),
-    );
   }
 
   @override
   void dispose() {
+    _controller.dispose(); // Dispose do controller de animação
     webSocketService.close();
     super.dispose();
   }
@@ -185,14 +153,6 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       _selectedIndex = index;
     });
-
-    if (index == 0) {
-      _refreshMissionStatus();
-    }
-  }
-
-  void _refreshMissionStatus() {
-    webSocketService.connect();
   }
 
   Future<void> _onRefresh() async {
@@ -202,23 +162,21 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: _scaffoldKey, // Usando o GlobalKey
+      key: _scaffoldKey,
       drawer: SidebarMenu(
         selectedIndex: _selectedIndex,
         onItemTapped: _onItemTapped,
-        keyData: key ?? 'Chave não definida', // Passando a chave
-        expiryDate: expiryDate ?? 'Data não definida', // Passando a data de validade
-        profileImageUrl: 'https://example.com/your-profile-image.jpg', // URL da imagem de perfil
+        controller: _controller, // Passando o AnimationController
       ),
       appBar: CustomHeader(
-        title: _titles[_selectedIndex], // Garantindo que o título corresponde ao índice correto
-        coins: _coins ?? 0,
+        title: _titles[_selectedIndex],
+        coins: _coins,
         onMenuTap: () {
           _scaffoldKey.currentState?.openDrawer(); // Abrindo o drawer via GlobalKey
         },
       ),
       body: IndexedStack(
-        index: _selectedIndex, // Mantém o estado de cada aba
+        index: _selectedIndex,
         children: _screens,
       ),
     );

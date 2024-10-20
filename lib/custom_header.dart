@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import "package:flutter/material.dart";
 import 'package:google_fonts/google_fonts.dart';
 
 class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
@@ -44,9 +44,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
           padding: const EdgeInsets.only(right: 16.0),
           child: Row(
             children: [
-              Animated3DCoin(
-                size: 24,
-              ),
+              Animated3DCoin(size: 24), // Estilo anterior da moeda animada
               const SizedBox(width: 4),
               Text(
                 _formatCoins(coins),
@@ -66,13 +64,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
       ],
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(0.5), // Divisor mais fino
-        child: Container(
-          height: 1,
-          color: Colors.grey.withOpacity(0.5), // Divisor cinzento semitransparente
-        ),
-      ),
+      // Sem divisor aqui
     );
   }
 
@@ -80,15 +72,15 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
   String _formatCoins(int coins) {
     if (coins >= 1000000) {
       return '${(coins / 1000000).toStringAsFixed(2)}M'; // Exibe como '1.57M'
-    } else if (coins >= 1000) {
-      return '${(coins / 1000).toStringAsFixed(2)}K'; // Exibe como '1.57K'
+    } else if (coins >= 10000) {
+      return '${(coins / 10000).toStringAsFixed(2)}K'; // Exibe como '1.57K'
     } else {
       return coins.toString(); // Exibe o valor normal se for menor que 1000
     }
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(45); // Altura ainda menor do AppBar com o divisor
+  Size get preferredSize => const Size.fromHeight(45); // Altura ainda menor do AppBar
 }
 
 // Widget para o ícone animado com efeito de rotação horizontal (3D)
@@ -165,4 +157,4 @@ class _Animated3DCoinState extends State<Animated3DCoin> with SingleTickerProvid
       },
     );
   }
-}
+} 
