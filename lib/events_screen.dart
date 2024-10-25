@@ -117,7 +117,7 @@ class _EventsScreenState extends State<EventsScreen>
                       children: [
                         Text(
                           title,
-                          style: GoogleFonts.montserrat(
+                          style: GoogleFonts.comfortaa(
                             fontSize: 15,
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
@@ -139,7 +139,7 @@ class _EventsScreenState extends State<EventsScreen>
                           },
                           child: Text(
                             ' (Importante)', // Texto com gradiente "importante" animado
-                            style: GoogleFonts.montserrat(
+                            style: GoogleFonts.comfortaa(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
@@ -151,7 +151,7 @@ class _EventsScreenState extends State<EventsScreen>
                     const SizedBox(height: 8),
                     Text(
                       description,
-                      style: GoogleFonts.montserrat(
+                      style: GoogleFonts.comfortaa(
                         fontSize: 13,
                         color: Colors.white.withOpacity(0.8),
                       ),
@@ -166,7 +166,7 @@ class _EventsScreenState extends State<EventsScreen>
                             const SizedBox(width: 5),
                             Text(
                               '10', // Valor das moedas
-                              style: GoogleFonts.montserrat(
+                              style: GoogleFonts.comfortaa(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -213,7 +213,7 @@ class _EventsScreenState extends State<EventsScreen>
                               ),
                               child: Text(
                                 'Resgatar',
-                                style: GoogleFonts.montserrat(
+                                style: GoogleFonts.comfortaa(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white, // Texto branco

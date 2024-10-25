@@ -42,7 +42,7 @@ class SidebarMenu extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'DASHBOARD',
-                  style: GoogleFonts.montserrat(
+                  style: GoogleFonts.comfortaa(
                     color: Colors.grey, // Cor cinza
                     fontSize: 14, // Tamanho menor
                     fontWeight: FontWeight.bold,
@@ -59,7 +59,7 @@ class SidebarMenu extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'UTILITÁRIOS', // Ajustado para Utilitários
-                  style: GoogleFonts.montserrat(
+                  style: GoogleFonts.comfortaa(
                     color: Colors.grey, // Cor cinza
                     fontSize: 14, // Tamanho menor
                     fontWeight: FontWeight.bold,
@@ -77,7 +77,7 @@ class SidebarMenu extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'GERADORES',
-                  style: GoogleFonts.montserrat(
+                  style: GoogleFonts.comfortaa(
                     color: Colors.grey, // Cor cinza
                     fontSize: 14, // Tamanho menor
                     fontWeight: FontWeight.bold,
@@ -94,7 +94,7 @@ class SidebarMenu extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'ATIVIDADES',
-                  style: GoogleFonts.montserrat(
+                  style: GoogleFonts.comfortaa(
                     color: Colors.grey, // Cor cinza
                     fontSize: 14, // Tamanho menor
                     fontWeight: FontWeight.bold,
@@ -139,7 +139,7 @@ class SidebarMenu extends StatelessWidget {
           ),
           title: Text(
             label,
-            style: GoogleFonts.montserrat(
+            style: GoogleFonts.comfortaa(
               fontSize: 14,
               color: Colors.white,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,

@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
 import 'websocket_service.dart';
 import 'daily_missions.dart';
 import 'update_section.dart';
-import 'dashed_divider.dart'; // Importando o divisor tracejado
-import 'animated_3d_coin.dart'; // Certifique-se de importar o arquivo corretamente
+import 'dashed_divider.dart';
+import 'animated_3d_coin.dart';
 
 class DashboardSection extends StatefulWidget {
   final Future<void> Function() onRefresh;
@@ -29,6 +30,7 @@ class DashboardSection extends StatefulWidget {
 
 class _DashboardSectionState extends State<DashboardSection> with TickerProviderStateMixin {
   bool canClaim = false;
+  bool isClaimingReward = false; // Flag de progresso para o resgate
   int timeRemaining = 0;
   Timer? _timer;
   String? _keyValue;
@@ -38,21 +40,18 @@ class _DashboardSectionState extends State<DashboardSection> with TickerProvider
   bool _isMissionLoading = true;
   bool _isTimerActive = true;
 
-  late AnimationController _controller; // Controlador da animação dos ícones
-  late AnimationController _dividerController; // Controlador da animação do divisor
+  late AnimationController _controller;
+  late AnimationController _dividerController;
 
   @override
   void initState() {
     super.initState();
     _initializeWebSocketService();
-
-    // Inicializando o controlador para o divisor tracejado
     _dividerController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat();
 
-    // Inicializando o controlador para a animação dos ícones
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -62,7 +61,7 @@ class _DashboardSectionState extends State<DashboardSection> with TickerProvider
   @override
   void dispose() {
     _dividerController.dispose();
-    _controller.dispose(); // Liberar o controlador de animação
+    _controller.dispose();
     _timer?.cancel();
     widget.webSocketService.close();
     super.dispose();
@@ -70,36 +69,29 @@ class _DashboardSectionState extends State<DashboardSection> with TickerProvider
 
   void _initializeWebSocketService() {
     try {
-      // Estabelecer conexão com o WebSocket
       widget.webSocketService.onMissionUpdate = updateMission;
-
       widget.webSocketService.onUserDataUpdated = (key, seller, expiryDate, likeDislikeStatus) {
         updateUserData(key, seller, expiryDate, likeDislikeStatus);
       };
-
       widget.webSocketService.connect();
-
-      // Enviar solicitação para buscar as missões do usuário
-      widget.webSocketService.requestMissions(widget.keyValue); // Novo método para solicitar missões
+      widget.webSocketService.requestMissions(widget.keyValue);
     } catch (e) {
       print('WebSocket initialization error: $e');
     }
   }
 
-  // Atualizar missões com dados do servidor
   void updateMission(String missionName, bool canClaim, int timeRemaining) {
     setState(() {
       if (missionName == "Resgatar Moedas Diariamente") {
-        // Atualizar normalmente se a missão é "Resgatar Moedas Diariamente"
         this.canClaim = canClaim;
         this.timeRemaining = timeRemaining;
       } else {
-        // Se a missão não existir, permitir resgatar
         this.canClaim = true;
         this.timeRemaining = 0;
       }
       _isMissionLoading = false;
       _isTimerActive = timeRemaining > 0;
+      isClaimingReward = false; // Finalizar o progresso de resgate
     });
 
     if (timeRemaining > 0) {
@@ -114,10 +106,8 @@ class _DashboardSectionState extends State<DashboardSection> with TickerProvider
       _expiryDate = expiryDate;
       _isUserDataLoading = false;
 
-      // Processar a lista de likeDislikeStatus, se necessário
       for (var status in likeDislikeStatus) {
         print('Status do vídeo ${status['video_title']}: ${status['liked']} likes, ${status['disliked']} dislikes');
-        // Realize ações adicionais com os dados aqui
       }
     });
   }
@@ -143,29 +133,21 @@ class _DashboardSectionState extends State<DashboardSection> with TickerProvider
     if (canClaim && _keyValue != null) {
       setState(() {
         canClaim = false;
-        timeRemaining = 86400; // Reiniciar o tempo para 24 horas
-        _isTimerActive = true;
+        isClaimingReward = true; // Iniciar o progresso de resgate
       });
 
-      // Enviar pedido de resgate de missão ao WebSocket
-      widget.webSocketService.claimMission(_keyValue!, 1); // Passa a chave do usuário e o ID da missão
+      widget.webSocketService.claimMission(_keyValue!, 1); // Solicitação de resgate
       _startMissionTimer();
     }
   }
 
-String _formatTime(int timeInSeconds) {
-  // Converte o tempo restante em horas, minutos e segundos
-  final duration = Duration(seconds: timeInSeconds);
-  final hours = duration.inHours.toString().padLeft(2, '0');
-  final minutes = (duration.inMinutes % 60).toString().padLeft(2, '0');
-  final seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
-  return '$hours:$minutes:$seconds';
-}
-
-
-
-
-
+  String _formatTime(int timeInSeconds) {
+    final duration = Duration(seconds: timeInSeconds);
+    final hours = duration.inHours.toString().padLeft(2, '0');
+    final minutes = (duration.inMinutes % 60).toString().padLeft(2, '0');
+    final seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
+    return '$hours:$minutes:$seconds';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -201,8 +183,26 @@ String _formatTime(int timeInSeconds) {
 
   Widget _buildUserDataSection() {
     if (_isUserDataLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
+      return Column(
+        children: [
+          _buildCircularShimmer(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: AnimatedDashedDivider(
+              controller: _dividerController,
+              color: Colors.grey,
+            ),
+          ),
+          _buildCircularShimmer(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: AnimatedDashedDivider(
+              controller: _dividerController,
+              color: Colors.grey,
+            ),
+          ),
+          _buildCircularShimmer(),
+        ],
       );
     }
 
@@ -247,11 +247,117 @@ String _formatTime(int timeInSeconds) {
     );
   }
 
+Widget _buildCircularShimmer() {
+  return ListTile(
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+    leading: Shimmer.fromColors(
+      baseColor: Colors.grey.shade800,
+      highlightColor: Colors.grey.shade500,
+      child: Container(
+        width: 20,
+        height: 20,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade800,
+          shape: BoxShape.circle,
+        ),
+      ),
+    ),
+    title: Row(
+      children: [
+        Shimmer.fromColors(
+          baseColor: Colors.grey.shade800,
+          highlightColor: Colors.grey.shade500,
+          child: Container(
+            height: 20,
+            width: 80, // Largura para o pequeno título
+            decoration: BoxDecoration(
+              color: Colors.grey.shade800,
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8.0), // Espaço entre o título e o conteúdo
+        Expanded(
+          child: Shimmer.fromColors(
+            baseColor: Colors.grey.shade800,
+            highlightColor: Colors.grey.shade500,
+            child: Container(
+              height: 20,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade800,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+
+Widget _buildCircularShimmerMissoes() {
+  return ListTile(
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+    title: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Shimmer.fromColors(
+          baseColor: Colors.grey.shade800,
+          highlightColor: Colors.grey.shade500,
+          child: Container(
+            height: 20,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade800,
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4), // Pequena separação entre o título e o subtítulo
+      ],
+    ),
+    subtitle: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Shimmer.fromColors(
+          baseColor: Colors.grey.shade800,
+          highlightColor: Colors.grey.shade500,
+          child: Container(
+            height: 15,
+            width: 150, // Largura do subtítulo
+            decoration: BoxDecoration(
+              color: Colors.grey.shade800,
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8), // Espaço entre o subtítulo e o valor das moedas
+        Shimmer.fromColors(
+          baseColor: Colors.grey.shade800,
+          highlightColor: Colors.grey.shade500,
+          child: Container(
+            height: 15,
+            width: 40, // Largura para o valor das moedas
+            decoration: BoxDecoration(
+              color: Colors.grey.shade800,
+              borderRadius: BorderRadius.circular(5),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+
+
+
   Widget _buildListItem({required String title, required String value, required IconData icon}) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
       leading: AnimatedBuilder(
-        animation: _controller, // Usando a animação do controlador
+        animation: _controller,
         builder: (context, child) {
           return ShaderMask(
             shaderCallback: (bounds) {
@@ -271,7 +377,7 @@ String _formatTime(int timeInSeconds) {
             },
             child: Icon(
               icon,
-              color: Colors.white, // A cor será sobrescrita pelo ShaderMask
+              color: Colors.white,
               size: 20,
             ),
           );
@@ -279,112 +385,27 @@ String _formatTime(int timeInSeconds) {
       ),
       title: Text(
         title,
-        style: GoogleFonts.montserrat(color: Colors.white),
+        style: GoogleFonts.comfortaa(color: Colors.white),
       ),
       trailing: Text(
         value,
-        style: GoogleFonts.montserrat(color: Colors.grey, fontSize: 16),
+        style: GoogleFonts.comfortaa(color: Colors.grey, fontSize: 16),
       ),
     );
   }
 
   Widget _buildDailyMissionsSection() {
     if (_isMissionLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
+      return Column(
+        children: [
+          _buildCircularShimmerMissoes(),
+        ],
       );
     }
 
-    // Verificar se pode resgatar ou não há missão ativa
-    if (canClaim || timeRemaining == 0) {
-      return _buildClaimButton(); // Exibir botão de resgate
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF14141a),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Resgatar Moedas Diariamente',
-              style: GoogleFonts.montserrat(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Faça login e resgate suas moedas a cada 24 horas.',
-              style: GoogleFonts.montserrat(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    const Animated3DCoin(size: 24), // Tamanho ajustado da moeda
-                    const SizedBox(width: 5),
-                    Text(
-                      '10',
-                      style: GoogleFonts.montserrat(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.access_time, // Ícone de tempo
-                      color: Colors.white,
-                      size: 18, // Tamanho ajustado do ícone
-                      shadows: [
-                        Shadow( // Contorno preto para destaque no ícone
-                          blurRadius: 1,
-                          color: Colors.black,
-                          offset: const Offset(1, 1),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(width: 5), // Espaço entre ícone e texto
-                    Text(
-                      _isTimerActive ? _formatTime(timeRemaining) : 'Aguarde...',
-                      style: GoogleFonts.montserrat(
-                        fontSize: 14, 
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white, 
-                        shadows: [
-                          Shadow(
-                            blurRadius: 1,
-                            color: Colors.black,
-                            offset: const Offset(1, 1),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
+    return canClaim || timeRemaining == 0 ? _buildClaimButton() : _buildCooldownCard();
   }
 
-  // Função para exibir o botão de resgate ou o botão de espera
   Widget _buildClaimButton() {
     return Container(
       decoration: BoxDecoration(
@@ -398,7 +419,7 @@ String _formatTime(int timeInSeconds) {
           children: [
             Text(
               'Resgatar Moedas Diariamente',
-              style: GoogleFonts.montserrat(
+              style: GoogleFonts.comfortaa(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -407,7 +428,7 @@ String _formatTime(int timeInSeconds) {
             const SizedBox(height: 8),
             Text(
               'Faça login e resgate suas moedas a cada 24 horas.',
-              style: GoogleFonts.montserrat(
+              style: GoogleFonts.comfortaa(
                 fontSize: 14,
                 color: Colors.grey,
               ),
@@ -418,11 +439,11 @@ String _formatTime(int timeInSeconds) {
               children: [
                 Row(
                   children: [
-                    const Animated3DCoin(size: 24), // Tamanho ajustado da moeda
+                    const Animated3DCoin(size: 24),
                     const SizedBox(width: 5),
                     Text(
                       '10',
-                      style: GoogleFonts.montserrat(
+                      style: GoogleFonts.comfortaa(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -431,91 +452,89 @@ String _formatTime(int timeInSeconds) {
                   ],
                 ),
                 GestureDetector(
-                  onTap: canClaim ? _claimReward : null, // Ativa ou bloqueia a ação
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Definir cores diferentes dependendo se pode resgatar ou não
-                      Container(
-                        width: 110,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          gradient: canClaim
-                              ? const LinearGradient(
-                                  colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                )
-                              : const LinearGradient(
-                                  colors: [Color(0xFFB0B0B0), Color(0xFF808080)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                  onTap: canClaim ? _claimReward : null,
+                  child: Container(
+                    width: 110,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-
-                      // Bolinhas animadas sobre o botão (mesmo para bloqueado)
-                      AnimatedBuilder(
-                        animation: _controller,
-                        builder: (context, child) {
-                          return ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: SizedBox(
-                              width: 110,
-                              height: 40,
-                              child: CustomPaint(
-                                painter: InfiniteCirclePainter(_controller.value),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-
-                      // Texto do botão ou contagem de tempo
-                      canClaim
-                          ? Text(
-                              'Resgatar',
-                              style: GoogleFonts.montserrat(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black, // Texto com destaque preto
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: isClaimingReward
+                          ? SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                strokeWidth: 2.0,
                               ),
                             )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.access_time, // Ícone de tempo
-                                  color: Colors.white,
-                                  size: 18, // Tamanho ajustado do ícone
-                                  shadows: [
-                                    Shadow( // Contorno preto para destaque no ícone
-                                      blurRadius: 1,
-                                      color: Colors.black,
-                                      offset: const Offset(1, 1),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(width: 5), // Espaço entre ícone e texto
-                                Text(
-                                  _isTimerActive ? _formatTime(timeRemaining) : 'Aguarde...',
-                                  style: GoogleFonts.montserrat(
-                                    fontSize: 14, // Tamanho ajustado do texto
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white, // Texto branco
-                                    shadows: [
-                                      Shadow( // Contorno preto para destaque no texto
-                                        blurRadius: 1,
-                                        color: Colors.black,
-                                        offset: const Offset(1, 1),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                          : Text(
+                              'Resgatar',
+                              style: GoogleFonts.comfortaa(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
                             ),
-                    ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCooldownCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF14141a),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Resgatar Moedas Diariamente',
+              style: GoogleFonts.comfortaa(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Shimmer.fromColors(
+              baseColor: Colors.grey.shade600,
+              highlightColor: Colors.grey.shade400,
+              child: Text(
+                'Próximo resgate em: ${_formatTime(timeRemaining)}',
+                style: GoogleFonts.comfortaa(
+                  fontSize: 14,
+                  color: Colors.grey.shade300,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Animated3DCoin(size: 24),
+                const SizedBox(width: 5),
+                Text(
+                  '10',
+                  style: GoogleFonts.comfortaa(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
                 ),
               ],
@@ -527,7 +546,6 @@ String _formatTime(int timeInSeconds) {
   }
 }
 
-// Classe para título de seção
 class SectionTitle extends StatelessWidget {
   final String title;
 
@@ -539,7 +557,7 @@ class SectionTitle extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Text(
         title,
-        style: GoogleFonts.montserrat(
+        style: GoogleFonts.comfortaa(
           fontSize: 18,
           fontWeight: FontWeight.bold,
           color: Colors.white,
@@ -549,7 +567,6 @@ class SectionTitle extends StatelessWidget {
   }
 }
 
-// Classe CustomPainter para desenhar bolinhas animadas
 class InfiniteCirclePainter extends CustomPainter {
   final double progress;
 
@@ -557,8 +574,8 @@ class InfiniteCirclePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    double circleRadius = 2; // Raio das bolinhas
-    double spacing = 4; // Espaçamento entre as bolinhas
+    double circleRadius = 2;
+    double spacing = 4;
 
     Paint paint = Paint()..color = Colors.white.withOpacity(0.3);
 

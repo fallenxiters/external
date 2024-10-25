@@ -6,6 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'login_screen.dart';
+import 'alert_helpers.dart';  // Importa o arquivo onde estão os alertas
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -34,40 +35,71 @@ class _SplashScreenState extends State<SplashScreen> {
     return udid;
   }
 
-  // Função que verifica o login no servidor
-  Future<void> _checkLoginStatus() async {
-    String udid = await _getOrCreateUDID();
+Future<void> _checkLoginStatus() async {
+  String udid = await _getOrCreateUDID();
 
+  try {
     // Envia o UDID para o servidor e verifica se há uma chave registrada
     final response = await http.post(
-      Uri.parse('https://mikeregedit.glitch.me/api/verifica_udid'), // Substitua pela sua API
+      Uri.parse('https://mikeregedit.glitch.me/api/verifica_udid'),
       body: jsonEncode({'udid': udid}),
       headers: {
         'Content-Type': 'application/json',
       },
     );
 
+    // Adicionando log para ver o status e a resposta
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
+
       if (responseData['success'] == true && responseData['key'] != null) {
-        // Se o UDID estiver registrado, faz login automaticamente
+        // Se o UDID estiver registrado e a chave for válida, faz login automaticamente
         String key = responseData['key'];
         Navigator.pushReplacementNamed(context, '/home', arguments: key);
       } else {
-        // Se não houver key, redireciona para a tela de login
+        // Se o UDID não estiver registrado, redireciona diretamente para a tela de login
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const LoginScreen()),
         );
       }
+    } else if (response.statusCode == 401) {
+      // Se o código for 401, trata as mensagens de chave expirada ou desativada
+      final responseData = jsonDecode(response.body);
+
+      if (responseData['message'] == 'expired key') {
+        await showErrorSheet(context, 'Sua chave está expirada. Por favor, faça login novamente.');
+      } else if (responseData['message'] == 'disabled key') {
+        await showErrorSheet(context, 'Sua chave foi desativada.');
+      } else {
+        await showErrorSheet(context, 'Erro de autenticação: ${responseData['message']}');
+      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
     } else {
-      // Erro na comunicação com o servidor, redireciona para a tela de login
+      // Em caso de erro no servidor, exibe o status do erro
+      await showErrorSheet(context, 'Erro no servidor: ${response.statusCode}');
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const LoginScreen()),
       );
     }
+  } catch (error) {
+    // Em caso de exceção, exibe o erro
+    await showErrorSheet(context, 'Erro de comunicação: $error');
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+    );
   }
+}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -94,10 +126,10 @@ class _SplashScreenState extends State<SplashScreen> {
                 strokeWidth: 4,
               ),
               const SizedBox(height: 30),
-              // Texto estilizado com Poppins
+              // Texto estilizado com comfortaa
               Text(
                 'Verificando login...',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.comfortaa(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: Colors.white.withOpacity(0.8),

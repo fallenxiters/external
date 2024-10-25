@@ -48,7 +48,7 @@ class LoginService {
               children: [
                 Text(
                   'Login bem-sucedido!',
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.comfortaa(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -56,21 +56,21 @@ class LoginService {
                 ),
                 Text(
                   'Key: ${response['key']}',
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.comfortaa(
                     fontSize: 16,
                     color: Colors.white,
                   ),
                 ),
                 Text(
                   'Vendedor: ${response['seller']}',
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.comfortaa(
                     fontSize: 16,
                     color: Colors.white,
                   ),
                 ),
                 Text(
                   'Expira em: ${response['expirydate']}',
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.comfortaa(
                     fontSize: 16,
                     color: Colors.white,
                   ),
@@ -93,7 +93,7 @@ class LoginService {
         SnackBar(
           content: Text(
             'Por favor, insira a chave de acesso',
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.comfortaa(
               fontSize: 16,
               color: Colors.white,
             ),
@@ -178,7 +178,7 @@ class LoginService {
       SnackBar(
         content: Text(
           userFriendlyMessage,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.comfortaa(
             fontSize: 16,
             color: Colors.white,
           ),

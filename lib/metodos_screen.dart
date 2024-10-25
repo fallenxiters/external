@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/services.dart';
-import 'Metodos/video_helper.dart';  // Importa o arquivo correto para usar playVideo
+import 'Metodos/video_helper.dart';
 import 'websocket_service.dart';
 import 'Metodos/compra_service.dart';
 import 'alert_helpers.dart';
@@ -17,8 +17,9 @@ class MetodosScreen extends StatefulWidget {
 class _MetodosScreenState extends State<MetodosScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  List<String> purchasedMethods = []; // Inicializa a lista de métodos comprados
+  List<String> purchasedMethods = [];
   late WebSocketService webSocketService;
+  Map<String, bool> loadingStatus = {};
 
   @override
   void initState() {
@@ -56,6 +57,18 @@ class _MetodosScreenState extends State<MetodosScreen>
     return purchasedMethods.contains(metodo);
   }
 
+  Future<void> _playVideoWithLoading(String metodo, bool isLendario) async {
+    setState(() {
+      loadingStatus[metodo] = true;
+    });
+
+    await playVideo(context, metodo, webSocketService, isLendario: isLendario);
+
+    setState(() {
+      loadingStatus[metodo] = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,7 +81,7 @@ class _MetodosScreenState extends State<MetodosScreen>
               const SizedBox(height: 20),
               Text(
                 'Métodos Normais',
-                style: GoogleFonts.montserrat(
+                style: GoogleFonts.comfortaa(
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -110,7 +123,7 @@ class _MetodosScreenState extends State<MetodosScreen>
                     },
                     child: Text(
                       'Métodos Bônus',
-                      style: GoogleFonts.montserrat(
+                      style: GoogleFonts.comfortaa(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -179,7 +192,7 @@ class _MetodosScreenState extends State<MetodosScreen>
             Expanded(
               child: Text(
                 titulo,
-                style: GoogleFonts.montserrat(
+                style: GoogleFonts.comfortaa(
                   fontSize: 16,
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -190,126 +203,27 @@ class _MetodosScreenState extends State<MetodosScreen>
         ),
         subtitle: Text(
           descricao,
-          style: GoogleFonts.montserrat(
+          style: GoogleFonts.comfortaa(
             fontSize: 14,
             color: Colors.white.withOpacity(0.8),
           ),
         ),
-        trailing: isControllFull
-            ? GestureDetector(
-                onTap: () => playVideo(context, titulo, webSocketService), // Usando a função playVideo corretamente
-                child: const Icon(Icons.arrow_forward_ios, color: Colors.white),
-              )
+        trailing: loadingStatus[titulo] == true
+            ? const CircularProgressIndicator(color: Colors.white)
             : GestureDetector(
-                onTap: () async {
-                  final storage = const FlutterSecureStorage();
-                  String? userKey = await storage.read(key: 'user_key');
-                  if (userKey != null) {
-                    _showCompraConfirmationSheet(context, titulo, preco, userKey);
-                  } else {
-                    showErrorSheet(context, 'Erro: Não foi possível encontrar a chave do usuário.');
-                  }
-                },
-                child: _buildCompraButton(preco),
+                onTap: () => _playVideoWithLoading(titulo, isBonus),
+                child: const Icon(Icons.arrow_forward_ios, color: Colors.white),
               ),
       ),
     );
   }
 
   Widget _buildMetodoNormalItem(String titulo, String descricao) {
-    return Card(
-      color: const Color(0xFF14141a),
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ListTile(
-        title: Text(
-          titulo,
-          style: GoogleFonts.montserrat(
-            fontSize: 16,
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        subtitle: Text(
-          descricao,
-          style: GoogleFonts.montserrat(
-            fontSize: 14,
-            color: Colors.white.withOpacity(0.8),
-          ),
-        ),
-        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white),
-        onTap: () {
-          playVideo(context, titulo, webSocketService); // Usando a função playVideo corretamente
-        },
-      ),
-    );
+    return _buildMetodoItem(titulo, descricao, 0);
   }
 
   Widget _buildMetodoLendarioNormalItem(String titulo, String descricao) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          width: 2,
-          color: Colors.amber.withOpacity(0.8),
-        ),
-      ),
-      color: const Color(0xFF14141a),
-      child: ListTile(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              titulo,
-              style: GoogleFonts.montserrat(
-                fontSize: 16,
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            ShaderMask(
-              shaderCallback: (bounds) {
-                final double slide = _controller.value * 2 - 1;
-                return LinearGradient(
-                  colors: [
-                    Colors.amber.shade200,
-                    Colors.amber.withOpacity(1.0),
-                    Colors.amber.shade400,
-                    Colors.amber.withOpacity(1.0),
-                    Colors.amber.shade200,
-                  ],
-                  stops: const [0.0, 0.4, 0.5, 0.6, 1.0],
-                  begin: Alignment(-1.5 + slide, 0),
-                  end: Alignment(1.5 + slide, 0),
-                ).createShader(bounds);
-              },
-              child: Text(
-                ' (Lendário)',
-                style: GoogleFonts.montserrat(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-        subtitle: Text(
-          descricao,
-          style: GoogleFonts.montserrat(
-            fontSize: 14,
-            color: Colors.white.withOpacity(0.8),
-          ),
-        ),
-        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.amber),
-        onTap: () {
-          playVideo(context, titulo, webSocketService, isLendario: true); // Usando a função playVideo corretamente
-        },
-      ),
-    );
+    return _buildMetodoItem(titulo, descricao, 0, isBonus: true);
   }
 
   Widget _buildMetodoLendarioItem({
@@ -351,7 +265,7 @@ class _MetodosScreenState extends State<MetodosScreen>
             SizedBox(width: isPurchased ? 8 : 0),
             Text(
               titulo,
-              style: GoogleFonts.montserrat(
+              style: GoogleFonts.comfortaa(
                 fontSize: 16,
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
@@ -375,7 +289,7 @@ class _MetodosScreenState extends State<MetodosScreen>
               },
               child: Text(
                 ' (Lendário)',
-                style: GoogleFonts.montserrat(
+                style: GoogleFonts.comfortaa(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -386,27 +300,16 @@ class _MetodosScreenState extends State<MetodosScreen>
         ),
         subtitle: Text(
           descricao,
-          style: GoogleFonts.montserrat(
+          style: GoogleFonts.comfortaa(
             fontSize: 14,
             color: Colors.white.withOpacity(0.8),
           ),
         ),
-        trailing: isPurchased
-            ? GestureDetector(
-                onTap: () => playVideo(context, titulo, webSocketService, isLendario: true), // Usando a função playVideo corretamente
-                child: const Icon(Icons.arrow_forward_ios, color: Colors.amber),
-              )
+        trailing: loadingStatus[titulo] == true
+            ? const CircularProgressIndicator(color: Colors.amber)
             : GestureDetector(
-                onTap: () async {
-                  final storage = const FlutterSecureStorage();
-                  String? userKey = await storage.read(key: 'user_key');
-                  if (userKey != null) {
-                    _showCompraConfirmationSheet(context, titulo, preco, userKey);
-                  } else {
-                    showErrorSheet(context, 'Erro: Não foi possível encontrar a chave do usuário.');
-                  }
-                },
-                child: _buildCompraButton(preco, isLendario: true),
+                onTap: () => _playVideoWithLoading(titulo, true),
+                child: const Icon(Icons.arrow_forward_ios, color: Colors.amber),
               ),
       ),
     );
@@ -450,7 +353,7 @@ class _MetodosScreenState extends State<MetodosScreen>
             const SizedBox(width: 4),
             Text(
               preco.toString(),
-              style: GoogleFonts.montserrat(
+              style: GoogleFonts.comfortaa(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -469,16 +372,45 @@ class _MetodosScreenState extends State<MetodosScreen>
     );
   }
 
-  Widget showPurchaseConfirmationSheet(
+  void _showCompraConfirmationSheet(
     BuildContext context,
-    String metodo,
+    String titulo,
+    int preco,
+    String userKey,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return _buildPurchaseConfirmationSheet(
+          context,
+          titulo,
+          preco,
+          () {
+            CompraService().comprarMetodo(context, userKey, titulo, preco).then((_) {
+              showSuccessSheet(context, 'Método $titulo comprado com sucesso!');
+              setState(() {
+                purchasedMethods.add(titulo);
+              });
+            }).catchError((error) {
+              showErrorSheet(context, 'Erro ao comprar o método $titulo.');
+            });
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildPurchaseConfirmationSheet(
+    BuildContext context,
+    String titulo,
     int preco,
     Function onConfirmPurchase,
   ) {
     return SafeArea(
-      bottom: true,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Container(
           decoration: BoxDecoration(
             color: const Color(0xFF1e1e26),
@@ -490,8 +422,8 @@ class _MetodosScreenState extends State<MetodosScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Você deseja comprar o método "$metodo" por $preco moedas?',
-                style: GoogleFonts.montserrat(
+                'Você deseja comprar o método "$titulo" por $preco moedas?',
+                style: GoogleFonts.comfortaa(
                   fontSize: 18,
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -515,15 +447,9 @@ class _MetodosScreenState extends State<MetodosScreen>
                       ),
                       child: Text(
                         'Comprar',
-                        style: GoogleFonts.montserrat(color: Colors.white),
+                        style: GoogleFonts.comfortaa(color: Colors.white),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Container(
-                    height: 50,
-                    width: 1,
-                    color: Colors.white.withOpacity(0.2),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -540,7 +466,7 @@ class _MetodosScreenState extends State<MetodosScreen>
                       ),
                       child: Text(
                         'Cancelar',
-                        style: GoogleFonts.montserrat(fontSize: 16, color: Colors.white),
+                        style: GoogleFonts.comfortaa(fontSize: 16, color: Colors.white),
                       ),
                     ),
                   ),
@@ -550,36 +476,6 @@ class _MetodosScreenState extends State<MetodosScreen>
           ),
         ),
       ),
-    );
-  }
-
-  void _showCompraConfirmationSheet(
-    BuildContext context,
-    String metodo,
-    int preco,
-    String userKey,
-  ) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (BuildContext context) {
-        return showPurchaseConfirmationSheet(
-          context,
-          metodo,
-          preco,
-          () {
-            CompraService().comprarMetodo(context, userKey, metodo, preco).then((_) {
-              showSuccessSheet(context, 'Método $metodo comprado com sucesso!');
-              setState(() {
-                purchasedMethods.add(metodo); // Adicionando o método à lista comprada dentro de setState
-              });
-            }).catchError((error) {
-              showErrorSheet(context, 'Erro ao comprar o método $metodo.');
-            });
-          },
-        );
-      },
     );
   }
 }

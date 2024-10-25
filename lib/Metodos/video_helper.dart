@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'video_player.dart';
 import '../websocket_service.dart';
 
-void playVideo(BuildContext context, String videoTitle, WebSocketService webSocketService, {bool isLendario = false}) async {
+Future<void> playVideo(BuildContext context, String videoTitle, WebSocketService webSocketService, {bool isLendario = false}) async {
   // Fazer uma requisição para obter as informações do vídeo no servidor
   final response = await http.get(Uri.parse('https://mikeregedit.glitch.me/api/videoInfo/$videoTitle'));
 

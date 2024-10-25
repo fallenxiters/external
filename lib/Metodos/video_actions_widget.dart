@@ -161,7 +161,7 @@ class _VideoActionsWidgetState extends State<VideoActionsWidget> {
                 Expanded(
                   child: Text(
                     widget.videoTitle,
-                    style: GoogleFonts.montserrat(
+                    style: GoogleFonts.comfortaa(
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -180,7 +180,7 @@ class _VideoActionsWidgetState extends State<VideoActionsWidget> {
             children: [
               Text(
                 widget.views,
-                style: GoogleFonts.montserrat(
+                style: GoogleFonts.comfortaa(
                   color: Colors.white70,
                   fontSize: 14,
                 ),
@@ -208,7 +208,7 @@ class _VideoActionsWidgetState extends State<VideoActionsWidget> {
                 const SizedBox(width: 4),
                 Text(
                   '$likes',
-                  style: GoogleFonts.montserrat(
+                  style: GoogleFonts.comfortaa(
                     color: Colors.white,
                     fontSize: 14,
                   ),
@@ -233,7 +233,7 @@ class _VideoActionsWidgetState extends State<VideoActionsWidget> {
                 const SizedBox(width: 4),
                 Text(
                   '$dislikes', // Oculta a contagem de dislikes
-                  style: GoogleFonts.montserrat(
+                  style: GoogleFonts.comfortaa(
                     color: Colors.white,
                     fontSize: 14,
                   ),

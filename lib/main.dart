@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'websocket_service.dart';
 import 'dashboard_section.dart';
 import 'login_screen.dart';
@@ -11,9 +10,9 @@ import 'funcoes_screen.dart';
 import 'splash_screen.dart';
 import 'metodos_screen.dart';
 import 'gerar_sensibilidade_screen.dart';
-import 'dashed_divider.dart'; // Verifique se este arquivo existe
-import 'custom_header.dart'; // Importando o cabeçalho personalizado
-import 'events_screen.dart'; // Importando a tela de eventos
+import 'dashed_divider.dart';
+import 'custom_header.dart';
+import 'events_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -45,7 +44,6 @@ class MyApp extends StatelessWidget {
         splashColor: Colors.transparent,
         highlightColor: Colors.transparent,
       ),
-      locale: WidgetsBinding.instance.window.locale,
       home: SplashScreen(),
       routes: {
         '/home': (context) => MyHomePage(
@@ -78,6 +76,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
 
   late AnimationController _controller; // Controller para animação
   int _coins = 0; // Inicialização de moedas
+  bool isLoading = true; // Inicializa isLoading como true
 
   @override
   void initState() {
@@ -117,6 +116,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         onCoinsUpdated: (coins) {
           setState(() {
             _coins = coins; // Atualizando o número de moedas
+            isLoading = false; // Define isLoading como false quando as moedas são carregadas
           });
         },
         onError: (error) {
@@ -171,9 +171,11 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
       appBar: CustomHeader(
         title: _titles[_selectedIndex],
         coins: _coins,
+        isLoading: isLoading, // Passa o valor atualizado de isLoading
         onMenuTap: () {
           _scaffoldKey.currentState?.openDrawer(); // Abrindo o drawer via GlobalKey
         },
+        controller: _controller, // Passando o AnimationController para o CustomHeader
       ),
       body: IndexedStack(
         index: _selectedIndex,

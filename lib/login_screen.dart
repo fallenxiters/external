@@ -103,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen>
                   children: [
                     Text(
                       'Faça login',
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.comfortaa(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -119,7 +119,7 @@ class _LoginScreenState extends State<LoginScreen>
                     const SizedBox(height: 8),
                     Text(
                       'Insira sua chave de acesso para continuar',
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.comfortaa(
                         fontSize: 16,
                         color: Colors.grey[400],
                       ),
@@ -127,7 +127,7 @@ class _LoginScreenState extends State<LoginScreen>
                     const SizedBox(height: 30),
                     TextField(
                       controller: _keyController,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.comfortaa(
                         fontSize: 16,
                         color: Colors.grey[400],
                       ),
@@ -191,7 +191,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 )
                               : Text(
                                   'Login',
-                                  style: GoogleFonts.poppins(
+                                  style: GoogleFonts.comfortaa(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
