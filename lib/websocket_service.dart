@@ -6,13 +6,13 @@ class WebSocketService {
   final String keyValue;
   final Function(int) onCoinsUpdated;
   final Function(String) onError;
-  Function(String, String, String, List<dynamic>)? onUserDataUpdated; // Chave, Vendedor, Data, Status de Like/Dislike
-  Function(String, bool, int)? onMissionUpdate; // Nome da missão, se pode reivindicar, tempo restante
+  Function(String, String, String, String, List<dynamic>)? onUserDataUpdated;
+  Function(String, bool, int)? onMissionUpdate;
   Function(List<String>)? onFunctionsUpdated;
-  Function(List<String>)? onPurchasedMethodsUpdated; // Callback para métodos comprados
-  Function(List<Map<String, dynamic>>)? onSensibilidadesUpdated; // Callback para sensibilidades
-  Function(Map<String, dynamic>)? onLikeDislikeStatusUpdated; // Callback para o status de like/dislike
-  Function(Map<String, dynamic>)? onAllVideosLikesDislikesUpdated; // Adicionado o getter e setter
+  Function(List<String>)? onPurchasedMethodsUpdated;
+  Function(List<Map<String, dynamic>>)? onSensibilidadesUpdated;
+  Function(Map<String, dynamic>)? onLikeDislikeStatusUpdated;
+  Function(Map<String, dynamic>)? onAllVideosLikesDislikesUpdated;
 
   WebSocketService({
     required this.keyValue,
@@ -55,11 +55,12 @@ class WebSocketService {
             String key = data['key'] ?? '';
             String seller = data['seller'] ?? '';
             String expiryDate = _parseExpiryDate(data['expirydate'] ?? '');
+            String game = data['game'] ?? '';
 
             List<dynamic> likeDislikeStatus = data['likeDislikeStatus'] ?? [];
 
             if (onUserDataUpdated != null) {
-              onUserDataUpdated!(key, seller, expiryDate, likeDislikeStatus);
+              onUserDataUpdated!(key, seller, expiryDate, game, likeDislikeStatus);
             }
 
             if (data.containsKey('activeFunctions') && onFunctionsUpdated != null) {
@@ -117,6 +118,31 @@ class WebSocketService {
     return 'Data não definida';
   }
 
+  // Função para enviar uma mensagem pelo WebSocket
+  void sendMessage(String message) {
+    if (_channel != null) {
+      _channel!.sink.add(message);
+    } else {
+      onError('Conexão WebSocket não estabelecida.');
+    }
+  }
+
+  // Getter para escutar mensagens recebidas do WebSocket
+  Stream<dynamic> get onMessage => _channel!.stream;
+
+  // Função para solicitar todas as sensibilidades para o usuário
+  void requestSensibilidades(String userKey) {
+    if (_channel != null) {
+      print('Solicitando sensibilidades para o usuário com chave $userKey');
+      _channel!.sink.add(jsonEncode({
+        'action': 'get_sensibilidades',
+        'userKey': userKey,
+      }));
+    } else {
+      onError('Conexão WebSocket não estabelecida.');
+    }
+  }
+
   // Função para solicitar todos os likes e dislikes de um usuário
   void getAllLikesDislikesForUser(String userKey) {
     if (_channel != null) {
@@ -130,7 +156,7 @@ class WebSocketService {
     }
   }
 
-  // Função para solicitar os dados do usuário (inclusive status de like/dislike)
+  // Função para solicitar os dados do usuário
   void requestUserData(String userKey) {
     if (_channel != null) {
       print('Solicitando dados do usuário com chave $userKey');
@@ -155,14 +181,6 @@ class WebSocketService {
     }
   }
 
-  // Método `sendMessage` para enviar mensagens ao WebSocket
-  void sendMessage(String message) {
-    _channel?.sink.add(message);
-  }
-
-  // Getter `onMessage` para escutar mensagens recebidas do WebSocket
-  Stream<dynamic> get onMessage => _channel!.stream;
-
   void reconnect() {
     close();
     Future.delayed(const Duration(seconds: 2), () {
@@ -173,6 +191,13 @@ class WebSocketService {
   void close() {
     if (_channel != null) {
       _channel!.sink.close();
+      _channel = null;
     }
+  }
+
+  // Novo método disconnect para encerrar a conexão WebSocket
+  void disconnect() {
+    close();
+    print("WebSocket desconectado manualmente.");
   }
 }

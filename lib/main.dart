@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -10,9 +11,8 @@ import 'funcoes_screen.dart';
 import 'splash_screen.dart';
 import 'metodos_screen.dart';
 import 'gerar_sensibilidade_screen.dart';
-import 'dashed_divider.dart';
-import 'custom_header.dart';
 import 'events_screen.dart';
+import 'custom_header.dart';
 
 void main() {
   runApp(const MyApp());
@@ -64,19 +64,19 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  int _selectedIndex = 0;
   final List<String> _titles = ['Início', 'Funções', 'Métodos', 'Gerar Sensibilidade', 'Eventos'];
-  late List<Widget> _screens;
   late WebSocketService webSocketService;
   final storage = FlutterSecureStorage();
 
   String? key;
   String? seller;
   String? expiryDate;
+  String? game;
 
-  late AnimationController _controller; // Controller para animação
-  int _coins = 0; // Inicialização de moedas
-  bool isLoading = true; // Inicializa isLoading como true
+  late AnimationController _controller;
+  int _coins = 0;
+  bool isLoading = true;
+  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -84,23 +84,9 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 1),
-    )..repeat(); // Animação contínua
+    )..repeat();
 
     _initializeWebSocketService();
-
-    _screens = [
-      DashboardSection(
-        onRefresh: _onRefresh,
-        keyValue: key ?? 'N/A',
-        seller: seller ?? 'N/A',
-        expiryDate: expiryDate ?? 'N/A',
-        webSocketService: webSocketService,
-      ),
-      const FuncoesScreen(),
-      const MetodosScreen(),
-      const GerarSensibilidadeScreen(),
-      const EventsScreen(), // Adicionando a tela de eventos
-    ];
   }
 
   Future<void> _initializeWebSocketService() async {
@@ -114,23 +100,32 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
       webSocketService = WebSocketService(
         keyValue: savedKey,
         onCoinsUpdated: (coins) {
-          setState(() {
-            _coins = coins; // Atualizando o número de moedas
-            isLoading = false; // Define isLoading como false quando as moedas são carregadas
-          });
+          if (mounted) {
+            setState(() {
+              _coins = coins;
+              isLoading = false;
+            });
+          }
         },
         onError: (error) {
-          // Lidar com erro
+          if (mounted) {
+            // Handle error if necessary
+          }
         },
-        onUserDataUpdated: (key, seller, expiryDate, likeDislikeStatus) {
-          setState(() {
-            this.key = key;
-            this.seller = seller;
-            this.expiryDate = expiryDate;
-          });
+        onUserDataUpdated: (key, seller, expiryDate, game, likeDislikeStatus) {
+          if (mounted) {
+            setState(() {
+              this.key = key;
+              this.seller = seller;
+              this.expiryDate = expiryDate;
+              this.game = game is String ? game : 'N/A';
+            });
+          }
         },
         onMissionUpdate: (missionName, canClaim, timeRemaining) {
-          // Atualização de missões
+          if (mounted) {
+            // Update missions if needed
+          }
         },
       );
       webSocketService.connect();
@@ -144,7 +139,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
 
   @override
   void dispose() {
-    _controller.dispose(); // Dispose do controller de animação
+    _controller.dispose();
     webSocketService.close();
     super.dispose();
   }
@@ -155,27 +150,38 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     });
   }
 
-  Future<void> _onRefresh() async {
-    webSocketService.connect();
-  }
-
   @override
   Widget build(BuildContext context) {
+    final List<Widget> _screens = [
+      DashboardSection(
+        onRefresh: _initializeWebSocketService,
+        keyValue: key ?? 'N/A',
+        seller: seller ?? 'N/A',
+        expiryDate: expiryDate ?? 'N/A',
+        game: game ?? 'N/A',
+        webSocketService: webSocketService,
+      ),
+      const FuncoesScreen(),
+      const MetodosScreen(),
+      const GerarSensibilidadeScreen(),
+      const EventsScreen(),
+    ];
+
     return Scaffold(
       key: _scaffoldKey,
       drawer: SidebarMenu(
         selectedIndex: _selectedIndex,
         onItemTapped: _onItemTapped,
-        controller: _controller, // Passando o AnimationController
+        controller: _controller,
       ),
       appBar: CustomHeader(
         title: _titles[_selectedIndex],
         coins: _coins,
-        isLoading: isLoading, // Passa o valor atualizado de isLoading
+        isLoading: isLoading,
         onMenuTap: () {
-          _scaffoldKey.currentState?.openDrawer(); // Abrindo o drawer via GlobalKey
+          _scaffoldKey.currentState?.openDrawer();
         },
-        controller: _controller, // Passando o AnimationController para o CustomHeader
+        controller: _controller,
       ),
       body: IndexedStack(
         index: _selectedIndex,

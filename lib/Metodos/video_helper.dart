@@ -14,8 +14,8 @@ Future<void> playVideo(BuildContext context, String videoTitle, WebSocketService
     String videoDescription = videoData['video_description'];
     String videoUrl = videoData['video_url'];
     int views = videoData['views'];
-    int likes = videoData['likes'];  // Aqui likes é um int
-    int dislikes = videoData['dislikes'];  // Aqui dislikes é um int
+    int initialLikes = videoData['likes'];  // Aqui likes é agora initialLikes
+    int initialDislikes = videoData['dislikes'];  // Aqui dislikes é agora initialDislikes
     int coinsReward = videoData['coinsReward'];
     int durationInSeconds = videoData['duration'];  // Pegando a duração em segundos
 
@@ -35,7 +35,7 @@ Future<void> playVideo(BuildContext context, String videoTitle, WebSocketService
       builder: (context) {
         return SafeArea(
           child: Container(
-            height: MediaQuery.of(context).size.height * 0.8,
+            height: MediaQuery.of(context).size.height * 0.9,
             margin: const EdgeInsets.all(4.0),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(25.0),
@@ -67,9 +67,9 @@ Future<void> playVideo(BuildContext context, String videoTitle, WebSocketService
                   methodTitle: videoTitle,
                   videoDescription: videoDescription,
                   views: '$views visualizações',
-                  likes: likes,  // Agora o likes é um int
-                  dislikes: dislikes,  // Agora o dislikes é um int
-                  requiredWatchDuration: requiredWatchDuration,  // Agora a duração vem do servidor
+                  initialLikes: initialLikes,  // Passando initialLikes
+                  initialDislikes: initialDislikes,  // Passando initialDislikes
+                  requiredWatchDuration: requiredWatchDuration,
                   webSocketService: webSocketService,
                   coinsReward: coinsReward,
                 ),

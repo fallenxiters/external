@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shimmer/shimmer.dart';
 import 'dart:convert';
 import 'websocket_service.dart';
 import 'alert_helpers.dart';
@@ -12,8 +13,7 @@ class GerarSensibilidadeScreen extends StatefulWidget {
   const GerarSensibilidadeScreen({Key? key}) : super(key: key);
 
   @override
-  _GerarSensibilidadeScreenState createState() =>
-      _GerarSensibilidadeScreenState();
+  _GerarSensibilidadeScreenState createState() => _GerarSensibilidadeScreenState();
 }
 
 class _GerarSensibilidadeScreenState extends State<GerarSensibilidadeScreen>
@@ -33,13 +33,14 @@ class _GerarSensibilidadeScreenState extends State<GerarSensibilidadeScreen>
     _loadUserKey();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 5), // Ajuste para tornar a animação mais lenta
+      duration: const Duration(seconds: 5),
     )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _webSocketService?.close();
     super.dispose();
   }
 
@@ -72,6 +73,7 @@ class _GerarSensibilidadeScreenState extends State<GerarSensibilidadeScreen>
       },
     );
     _webSocketService!.connect();
+    _webSocketService!.requestSensibilidades(_userKey!); // Solicita sensibilidades ao iniciar
   }
 
   Map<String, int> _generateSensibilidade(String speed) {
@@ -156,90 +158,6 @@ class _GerarSensibilidadeScreenState extends State<GerarSensibilidadeScreen>
     } else {
       await showErrorSheet(context, 'Erro no servidor. Tente novamente mais tarde.');
     }
-  }
-
-  Widget _buildSensibilidadeSelector() {
-    return DropdownButton<String>(
-      isExpanded: true,
-      value: _selectedSpeed,
-      items: <String>['Rápida', 'Média', 'Lenta'].map((String value) {
-        return DropdownMenuItem<String>(
-          value: value,
-          child: Text(
-            value,
-            style: GoogleFonts.comfortaa(color: Colors.white),
-          ),
-        );
-      }).toList(),
-      onChanged: (String? newValue) {
-        setState(() {
-          _selectedSpeed = newValue!;
-        });
-      },
-      dropdownColor: const Color(0xFF14141a),
-    );
-  }
-
-  Widget _buildGenerateButton(int cost, String tipo, String category) {
-    return GestureDetector(
-      onTap: _isLoading ? null : () => gerarSensibilidade(_selectedSpeed, cost, category),
-      child: Container(
-        width: double.infinity,
-        height: 50,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFFBB86FC), Color(0xFF6200EE)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-              ),
-              Positioned.fill(
-                child: AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, child) {
-                    return CustomPaint(
-                      painter: InfiniteCirclePainter(_controller.value),
-                    );
-                  },
-                ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Animated3DCoin(size: 24),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$cost',
-                    style: GoogleFonts.comfortaa(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      shadows: [
-                        Shadow(
-                          offset: const Offset(2, 2),
-                          blurRadius: 4.0,
-                          color: Colors.black,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _buildArquivoCard() {
@@ -330,11 +248,15 @@ class _GerarSensibilidadeScreenState extends State<GerarSensibilidadeScreen>
             ),
           ),
           const SizedBox(height: 5),
-          Text(
-            'Gerada em: ${_formatDate(sensibilidade['dateGenerated'])}',
-            style: GoogleFonts.comfortaa(
-              fontSize: 14,
-              color: Colors.grey,
+          Shimmer.fromColors(
+            baseColor: Colors.grey.shade600,
+            highlightColor: Colors.grey.shade400,
+            child: Text(
+              'Gerada em: ${_formatDate(sensibilidade['dateGenerated'])}',
+              style: GoogleFonts.comfortaa(
+                fontSize: 14,
+                color: Colors.grey.shade300,
+              ),
             ),
           ),
           const SizedBox(height: 10),
@@ -384,6 +306,90 @@ class _GerarSensibilidadeScreenState extends State<GerarSensibilidadeScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSensibilidadeSelector() {
+    return DropdownButton<String>(
+      isExpanded: true,
+      value: _selectedSpeed,
+      items: <String>['Rápida', 'Média', 'Lenta'].map((String value) {
+        return DropdownMenuItem<String>(
+          value: value,
+          child: Text(
+            value,
+            style: GoogleFonts.comfortaa(color: Colors.white),
+          ),
+        );
+      }).toList(),
+      onChanged: (String? newValue) {
+        setState(() {
+          _selectedSpeed = newValue!;
+        });
+      },
+      dropdownColor: const Color(0xFF14141a),
+    );
+  }
+
+  Widget _buildGenerateButton(int cost, String tipo, String category) {
+    return GestureDetector(
+      onTap: _isLoading ? null : () => gerarSensibilidade(_selectedSpeed, cost, category),
+      child: Container(
+        width: double.infinity,
+        height: 50,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFBB86FC), Color(0xFF6200EE)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: AnimatedBuilder(
+                  animation: _controller,
+                  builder: (context, child) {
+                    return CustomPaint(
+                      painter: InfiniteCirclePainter(_controller.value),
+                    );
+                  },
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Animated3DCoin(size: 24),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$cost',
+                    style: GoogleFonts.comfortaa(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      shadows: [
+                        Shadow(
+                          offset: const Offset(2, 2),
+                          blurRadius: 4.0,
+                          color: Colors.black,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

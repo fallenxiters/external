@@ -7,6 +7,8 @@ import '../websocket_service.dart';
 import 'coins_service.dart';
 import '../dashed_divider.dart';
 import 'video_actions_widget.dart';
+import 'package:shimmer/shimmer.dart';
+import '../animated_3d_coin.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
   final String videoUrl;
@@ -14,8 +16,8 @@ class VideoPlayerScreen extends StatefulWidget {
   final String methodTitle;
   final String videoDescription;
   final String views;
-  final int likes;
-  final int dislikes;
+  final int initialLikes;
+  final int initialDislikes;
   final Duration requiredWatchDuration;
   final WebSocketService webSocketService;
   final int coinsReward;
@@ -27,8 +29,8 @@ class VideoPlayerScreen extends StatefulWidget {
     required this.methodTitle,
     required this.videoDescription,
     required this.views,
-    required this.likes,
-    required this.dislikes,
+    required this.initialLikes,
+    required this.initialDislikes,
     required this.requiredWatchDuration,
     required this.webSocketService,
     required this.coinsReward,
@@ -39,7 +41,7 @@ class VideoPlayerScreen extends StatefulWidget {
 }
 
 class _VideoPlayerScreenState extends State<VideoPlayerScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late VideoPlayerController _controller;
   bool _isPlaying = true;
   bool _showControls = true;
@@ -47,16 +49,49 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
   bool _isBuffering = false;
   bool _videoEnded = false;
   bool _videoWatched = false;
+  bool _isLoading = true;
   int _cooldownTimeRemaining = 0;
   Timer? _hideControlsTimer;
   Timer? _cooldownTimer;
   late AnimationController _dividerController;
+  late AnimationController _expandController;
+  late AnimationController _gradientController;
 
   @override
   void initState() {
     super.initState();
     _initializeScreenState();
     _initializeWebSocket();
+    _startLoading();
+
+    _expandController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+
+    _gradientController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+  }
+
+  void _startLoading() {
+    Future.delayed(Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        _checkCooldown();
+      }
+    });
+  }
+
+  void _checkCooldown() {
+    if (_cooldownTimeRemaining <= 0) {
+      setState(() {
+        _isButtonEnabled = true;
+      });
+    }
   }
 
   void _initializeScreenState() {
@@ -64,7 +99,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     _videoWatched = false;
     _controller = VideoPlayerController.network(widget.videoUrl)
       ..initialize().then((_) {
-        setState(() {});
+        if (mounted) setState(() {});
         _controller.play();
       });
 
@@ -85,6 +120,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
   @override
   void dispose() {
     _controller.dispose();
+    _expandController.dispose();
+    _gradientController.dispose();
     _dividerController.dispose();
     _cooldownTimer?.cancel();
     _hideControlsTimer?.cancel();
@@ -94,32 +131,46 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
   void _initializeWebSocket() {
     widget.webSocketService.onMissionUpdate =
         (missionName, canClaim, timeRemaining) {
-      setState(() {
-        if (missionName == widget.methodTitle) {
-          if (canClaim) {
-            _cooldownTimeRemaining = 0;
-            _isButtonEnabled = true;
-          } else {
-            _cooldownTimeRemaining = timeRemaining;
-            _isButtonEnabled = false;
-            _startCooldownTimer();
+      if (mounted) {
+        setState(() {
+          if (missionName == widget.methodTitle) {
+            if (canClaim) {
+              _cooldownTimeRemaining = 0;
+              _isButtonEnabled = true;
+            } else {
+              _cooldownTimeRemaining = timeRemaining;
+              _isButtonEnabled = false;
+              _startCooldownTimer();
+            }
           }
-        }
-      });
+        });
+      }
     };
   }
 
   void _startCooldownTimer() {
     _cooldownTimer?.cancel();
     _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        if (_cooldownTimeRemaining > 0) {
-          _cooldownTimeRemaining -= 1;
-        } else {
-          _cooldownTimer?.cancel();
-          _isButtonEnabled = true;
-        }
-      });
+      if (mounted) {
+        setState(() {
+          if (_cooldownTimeRemaining > 0) {
+            _cooldownTimeRemaining -= 1;
+          } else {
+            _cooldownTimer?.cancel();
+            _resetVideoAndCard();
+          }
+        });
+      }
+    });
+  }
+
+  void _resetVideoAndCard() {
+    setState(() {
+      _controller.seekTo(Duration.zero);
+      _controller.play();
+      _videoWatched = false;
+      _isButtonEnabled = false;
+      _cooldownTimeRemaining = 86400;
     });
   }
 
@@ -127,61 +178,61 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     final currentPosition = _controller.value.position;
 
     if (currentPosition >= widget.requiredWatchDuration && !_videoWatched) {
-      setState(() {
-        _isButtonEnabled = true;
-        _videoWatched = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isButtonEnabled = true;
+          _videoWatched = true;
+        });
+      }
     }
 
     if (currentPosition == _controller.value.duration) {
+      if (mounted) {
+        setState(() {
+          _videoEnded = true;
+          _controller.pause();
+          _isPlaying = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _onResgatarMoedasPressed() async {
+    CoinsService coinsService = CoinsService();
+    await coinsService.resgatarMoedas(context, widget.methodTitle);
+    _resetVideoAndCard();
+  }
+
+  void _togglePlayPause() {
+    if (mounted) {
       setState(() {
-        _videoEnded = true;
-        _controller.pause();
-        _isPlaying = false;
+        if (_controller.value.isPlaying) {
+          _controller.pause();
+          _isPlaying = false;
+          _showControls = true;
+          _hideControlsTimer?.cancel();
+        } else {
+          _controller.play();
+          _isPlaying = true;
+          _startHideControlsTimer();
+        }
       });
     }
   }
 
-  Future<void> _onResgatarMoedasPressed(int moedas) async {
-    CoinsService coinsService = CoinsService();
-    await coinsService.resgatarMoedas(context, widget.methodTitle);
-    _controller.seekTo(Duration.zero);
-    _controller.play();
-    setState(() {
-      _videoEnded = false;
-      _isButtonEnabled = false;
-      _videoWatched = false;
-      _cooldownTimeRemaining = 86400; // Exemplo: 24 horas em segundos (ajuste conforme necessário)
-    });
-    _startCooldownTimer();
-  }
-
-  void _togglePlayPause() {
-    setState(() {
-      if (_controller.value.isPlaying) {
-        _controller.pause();
-        _isPlaying = false;
-        _showControls = true;
-        _hideControlsTimer?.cancel();
-      } else {
-        _controller.play();
-        _isPlaying = true;
-        _startHideControlsTimer();
-      }
-    });
-  }
-
   void _toggleControls() {
-    setState(() {
-      _showControls = !_showControls;
-      _startHideControlsTimer();
-    });
+    if (mounted) {
+      setState(() {
+        _showControls = !_showControls;
+        _startHideControlsTimer();
+      });
+    }
   }
 
   void _startHideControlsTimer() {
     _hideControlsTimer?.cancel();
     _hideControlsTimer = Timer(const Duration(seconds: 3), () {
-      if (_isPlaying && !_isBuffering) {
+      if (_isPlaying && !_isBuffering && mounted) {
         setState(() {
           _showControls = false;
         });
@@ -266,6 +317,269 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
+  Widget _buildShimmerPlaceholder() {
+    return Card(
+      color: const Color(0xFF14141a),
+      margin: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Shimmer.fromColors(
+              baseColor: Colors.grey.shade600,
+              highlightColor: Colors.grey.shade400,
+              child: Container(
+                width: 120,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Shimmer.fromColors(
+              baseColor: Colors.grey.shade600,
+              highlightColor: Colors.grey.shade400,
+              child: Container(
+                width: 200,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Shimmer.fromColors(
+                  baseColor: Colors.grey.shade600,
+                  highlightColor: Colors.grey.shade400,
+                  child: Container(
+                    width: 40,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+Widget _buildResgatarCard() {
+  bool useGoldGradient = true;
+  return Card(
+    color: const Color(0xFF14141a),
+    margin: const EdgeInsets.all(16),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Ganhar Moedas',
+                  style: GoogleFonts.comfortaa(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Assista o vídeo completo para resgatar suas moedas.',
+                  style: GoogleFonts.comfortaa(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Animated3DCoin(size: 18),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${widget.coinsReward}',
+                      style: GoogleFonts.comfortaa(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: _isButtonEnabled ? _onResgatarMoedasPressed : null,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                AnimatedBuilder(
+                  animation: _expandController,
+                  builder: (context, child) {
+                    return Transform.scale(
+                      scale: 1.0 + _expandController.value * 0.3,
+                      child: Opacity(
+                        opacity: 1.0 - _expandController.value,
+                        child: Container(
+                          width: 80, // Largura ajustada
+                          height: (35 + _expandController.value * 5).toDouble(), // Altura ajustada
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: useGoldGradient
+                                  ? Colors.amberAccent.withOpacity(0.5)
+                                  : Colors.greenAccent.withOpacity(0.5),
+                              width: 2.0,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                AnimatedBuilder(
+                  animation: _gradientController,
+                  builder: (context, child) {
+                    return Container(
+                      width: 80,
+                      height: 35,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        gradient: useGoldGradient
+                            ? LinearGradient(
+                                colors: [
+                                  Colors.amber.shade400,
+                                  Colors.amber.shade200,
+                                  Colors.amber.shade400,
+                                  Colors.amber.shade200,
+                                ],
+                                stops: const [0.0, 0.33, 0.66, 1.0],
+                                begin: Alignment(
+                                    -1.5 + _gradientController.value * 3, 0),
+                                end: Alignment(
+                                    1.5 + _gradientController.value * 3, 0),
+                              )
+                            : LinearGradient(
+                                colors: [
+                                  Colors.greenAccent.shade200.withOpacity(0.8),
+                                  Colors.green.shade400.withOpacity(0.8),
+                                ],
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                              ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Resgatar',
+                          style: GoogleFonts.comfortaa(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                blurRadius: 1,
+                                color: Colors.black,
+                                offset: const Offset(1, 1),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+
+  Widget _buildBloqueadoCard() {
+    return Card(
+      color: const Color(0xFF14141a),
+      margin: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Ganhar Moedas',
+              style: GoogleFonts.comfortaa(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Assista o vídeo completo para resgatar suas moedas.',
+              style: GoogleFonts.comfortaa(
+                color: Colors.white70,
+                fontSize: 14,
+              ),
+            ),
+            if (_cooldownTimeRemaining > 0) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Shimmer.fromColors(
+                    baseColor: Colors.grey.shade600,
+                    highlightColor: Colors.grey.shade400,
+                    child: Text(
+                      'Próximo resgate em: ${_formatCooldownTime(_cooldownTimeRemaining)}',
+                      style: GoogleFonts.comfortaa(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade300,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Animated3DCoin(size: 18),
+                const SizedBox(width: 4),
+                Text(
+                  '${widget.coinsReward}',
+                  style: GoogleFonts.comfortaa(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -306,11 +620,18 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
                   videoTitle: widget.videoTitle,
                   videoDescription: widget.videoDescription,
                   views: widget.views,
-                  onDescriptionPressed: () => _openDescriptionSheet(widget.videoDescription),
+                  initialLikes: widget.initialLikes,
+                  initialDislikes: widget.initialDislikes,
+                  onDescriptionPressed: () =>
+                      _openDescriptionSheet(widget.videoDescription),
                   webSocketService: widget.webSocketService,
                 ),
               ),
-              _buildGanarMoedasCard(),
+              _isLoading
+                  ? _buildShimmerPlaceholder()
+                  : _videoWatched
+                      ? _buildResgatarCard()
+                      : _buildBloqueadoCard(),
             ],
           ),
         ),
@@ -342,248 +663,5 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
             ),
           )
         : const SizedBox.shrink();
-  }
-
-Widget _buildGanarMoedasCard() {
-    int moedas = widget.coinsReward;
-
-    // Verifica se o vídeo foi assistido completamente e se o cooldown já passou
-    if (!_videoWatched || _cooldownTimeRemaining > 0) {
-      return _buildBloqueadoCard();  // Mostra o card, mas com o botão bloqueado
-    }
-
-    // Se o vídeo foi assistido e o cooldown terminou, exibe o card com a opção de resgatar
-    return Card(
-      color: const Color(0xFF14141a),
-      margin: const EdgeInsets.all(16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Ganhar Moedas',
-                    style: GoogleFonts.comfortaa(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Assista o vídeo e resgate moedas.',
-                    style: GoogleFonts.comfortaa(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.monetization_on,
-                          color: Colors.yellow, size: 20),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$moedas Moedas',
-                        style: GoogleFonts.comfortaa(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            _buildGradientButton(moedas),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCooldownCard() {
-    return Card(
-      color: const Color(0xFF14141a),
-      margin: const EdgeInsets.all(16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Ganhar Moedas',
-                    style: GoogleFonts.comfortaa(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _cooldownTimeRemaining > 0
-                        ? 'Próximo resgate em:'
-                        : '',  // Mostra o texto apenas se o cooldown estiver ativo
-                    style: GoogleFonts.comfortaa(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (_cooldownTimeRemaining > 0)
-                    Text(
-                      _formatCooldownTime(_cooldownTimeRemaining),
-                      style: GoogleFonts.comfortaa(
-                        color: Colors.redAccent,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            _buildLockedButton(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGradientButton(int moedas) {
-    return Container(
-      width: 90,
-      height: 40,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF00C853), Color(0xFF1B5E20)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: ElevatedButton(
-        onPressed: _isButtonEnabled ? () => _onResgatarMoedasPressed(moedas) : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        child: Text(
-          'Resgatar',
-          style: GoogleFonts.comfortaa(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-  }
-
-Widget _buildBloqueadoCard() {
-  return Card(
-    color: const Color(0xFF14141a),
-    margin: const EdgeInsets.all(16),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Ganhar Moedas',
-                  style: GoogleFonts.comfortaa(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                if (!_videoWatched)
-                  Text(
-                    'Assista o vídeo completo para resgatar suas moedas.',
-                    style: GoogleFonts.comfortaa(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
-                  ),
-                if (_cooldownTimeRemaining > 0) ...[
-                  Text(
-                    'Próximo resgate em:',
-                    style: GoogleFonts.comfortaa(
-                      color: Colors.amber, // Cor vibrante para destacar
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold, // Negrito para destacar
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatCooldownTime(_cooldownTimeRemaining),
-                    style: GoogleFonts.comfortaa(
-                      color: Colors.redAccent, // Mantém o tempo em vermelho
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          _buildLockedButton(),
-        ],
-      ),
-    ),
-  );
-}
-
-
-  Widget _buildLockedButton() {
-    return Container(
-      width: 100,
-      height: 40,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        color: Colors.grey.shade600,
-      ),
-      child: Center(
-        child: ElevatedButton(
-          onPressed: null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            padding: EdgeInsets.zero,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.lock, color: Colors.white, size: 16),
-              const SizedBox(width: 4),
-              Text(
-                'Bloqueado',
-                style: GoogleFonts.comfortaa(color: Colors.white, fontSize: 12),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

@@ -8,6 +8,8 @@ class VideoActionsWidget extends StatefulWidget {
   final String videoTitle;
   final String videoDescription;
   final String views;
+  final int initialLikes;
+  final int initialDislikes;
   final Function onDescriptionPressed;
   final WebSocketService webSocketService;
 
@@ -18,6 +20,8 @@ class VideoActionsWidget extends StatefulWidget {
     required this.views,
     required this.onDescriptionPressed,
     required this.webSocketService,
+    required this.initialLikes,
+    required this.initialDislikes,
   }) : super(key: key);
 
   @override
@@ -26,7 +30,7 @@ class VideoActionsWidget extends StatefulWidget {
 
 class _VideoActionsWidgetState extends State<VideoActionsWidget> {
   int likes = 0;
-  int dislikes = 0; // Mantém a variável de dislikes
+  int dislikes = 0;
   bool isLiked = false;
   bool isDisliked = false;
   String? userKey;
@@ -36,19 +40,19 @@ class _VideoActionsWidgetState extends State<VideoActionsWidget> {
   @override
   void initState() {
     super.initState();
-    _loadUserKey();
+    likes = widget.initialLikes;
+    dislikes = widget.initialDislikes;
 
-    // Adicionar listener para receber os dados de sendUserData (inclui o likeDislikeStatus)
+    _loadUserKey();
     widget.webSocketService.onUserDataUpdated = _updateLikeDislikeStatus;
   }
 
-  // Carrega a chave do usuário
+  // Carrega a chave do usuário e solicita dados iniciais do vídeo
   Future<void> _loadUserKey() async {
     userKey = await _storage.read(key: 'user_key');
     print('Chave do usuário carregada: $userKey');
 
     if (userKey != null) {
-      // Solicitar os dados do usuário, incluindo likes/dislikes
       print('Solicitando dados do usuário (incluindo likes/dislikes) para a chave $userKey...');
       widget.webSocketService.requestUserData(userKey!);
     } else {
@@ -56,9 +60,10 @@ class _VideoActionsWidgetState extends State<VideoActionsWidget> {
     }
   }
 
-  // Função para processar o likeDislikeStatus recebido de sendUserData
-  void _updateLikeDislikeStatus(String key, String seller, String expiryDate, List<dynamic> likeDislikeStatus) {
-    // Verifica se o vídeo atual está no status de like/dislike
+  // Atualiza o status de like e dislike quando os dados são recebidos
+  void _updateLikeDislikeStatus(String key, String seller, String expiryDate, String game, List<dynamic> likeDislikeStatus) {
+    if (!mounted) return;
+
     final videoStatus = likeDislikeStatus.firstWhere(
       (video) => video['video_title'] == widget.videoTitle,
       orElse: () => null,
@@ -66,27 +71,24 @@ class _VideoActionsWidgetState extends State<VideoActionsWidget> {
 
     if (videoStatus != null) {
       setState(() {
-        likes = videoStatus['total_likes'] ?? 0;
-        dislikes = videoStatus['total_dislikes'] ?? 0; // Atualiza a contagem de dislikes
+        likes = videoStatus['total_likes'] ?? likes;
+        dislikes = videoStatus['total_dislikes'] ?? dislikes;
         isLiked = videoStatus['liked'] == 1;
         isDisliked = videoStatus['disliked'] == 1;
-
-        // Logs detalhados
-        print('Status de likes/dislikes para o vídeo "${widget.videoTitle}" atualizado.');
-        print('Liked: $isLiked, Disliked: $isDisliked');
-        print('Total Likes: $likes, Total Dislikes: $dislikes');
       });
-    } else {
-      print('Vídeo "${widget.videoTitle}" não encontrado nos dados recebidos.');
     }
+  }
+
+  @override
+  void dispose() {
+    widget.webSocketService.onUserDataUpdated = null;
+    super.dispose();
   }
 
   Future<void> _handleLike() async {
     if (userKey == null) return;
 
     if (isLiked) {
-      // Remover like
-      print('Removendo like do vídeo: ${widget.videoTitle}');
       widget.webSocketService.sendMessage(jsonEncode({
         'action': 'remove_like',
         'videoTitle': widget.videoTitle,
@@ -94,7 +96,6 @@ class _VideoActionsWidgetState extends State<VideoActionsWidget> {
       }));
     } else {
       if (isDisliked) {
-        print('Removendo dislike do vídeo: ${widget.videoTitle}');
         widget.webSocketService.sendMessage(jsonEncode({
           'action': 'remove_dislike',
           'videoTitle': widget.videoTitle,
@@ -102,7 +103,6 @@ class _VideoActionsWidgetState extends State<VideoActionsWidget> {
         }));
       }
 
-      print('Adicionando like ao vídeo: ${widget.videoTitle}');
       widget.webSocketService.sendMessage(jsonEncode({
         'action': 'like_video',
         'videoTitle': widget.videoTitle,
@@ -115,8 +115,6 @@ class _VideoActionsWidgetState extends State<VideoActionsWidget> {
     if (userKey == null) return;
 
     if (isDisliked) {
-      // Remover dislike
-      print('Removendo dislike do vídeo: ${widget.videoTitle}');
       widget.webSocketService.sendMessage(jsonEncode({
         'action': 'remove_dislike',
         'videoTitle': widget.videoTitle,
@@ -124,7 +122,6 @@ class _VideoActionsWidgetState extends State<VideoActionsWidget> {
       }));
     } else {
       if (isLiked) {
-        print('Removendo like do vídeo: ${widget.videoTitle}');
         widget.webSocketService.sendMessage(jsonEncode({
           'action': 'remove_like',
           'videoTitle': widget.videoTitle,
@@ -132,7 +129,6 @@ class _VideoActionsWidgetState extends State<VideoActionsWidget> {
         }));
       }
 
-      print('Adicionando dislike ao vídeo: ${widget.videoTitle}');
       widget.webSocketService.sendMessage(jsonEncode({
         'action': 'dislike_video',
         'videoTitle': widget.videoTitle,
@@ -228,17 +224,6 @@ class _VideoActionsWidgetState extends State<VideoActionsWidget> {
                     size: 18,
                   ),
                 ),
-                // Oculte a contagem de dislikes
-                /*
-                const SizedBox(width: 4),
-                Text(
-                  '$dislikes', // Oculta a contagem de dislikes
-                  style: GoogleFonts.comfortaa(
-                    color: Colors.white,
-                    fontSize: 14,
-                  ),
-                ),
-                */
               ],
             ),
           ),

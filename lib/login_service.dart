@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
+import 'alert_helpers.dart'; // Importa o arquivo de alertas personalizados
 
 class LoginService {
   static final _storage = FlutterSecureStorage();
@@ -40,69 +41,15 @@ class LoginService {
       if (response['message'] == 'success') {
         await _storage.write(key: 'user_key', value: key); // Salvando a chave do usuário no storage
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Login bem-sucedido!',
-                  style: GoogleFonts.comfortaa(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                Text(
-                  'Key: ${response['key']}',
-                  style: GoogleFonts.comfortaa(
-                    fontSize: 16,
-                    color: Colors.white,
-                  ),
-                ),
-                Text(
-                  'Vendedor: ${response['seller']}',
-                  style: GoogleFonts.comfortaa(
-                    fontSize: 16,
-                    color: Colors.white,
-                  ),
-                ),
-                Text(
-                  'Expira em: ${response['expirydate']}',
-                  style: GoogleFonts.comfortaa(
-                    fontSize: 16,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 4),
-          ),
-        );
+        await showSuccessSheet(context, 'Login bem-sucedido!'); // Alerta de sucesso
 
         Navigator.pushReplacementNamed(context, '/home', arguments: key);
       } else {
-        _showUserFriendlyMessage(response['message'], context);
+        await _showUserFriendlyMessage(response['message'], context); // Alerta de erro
       }
     } else {
       setLoadingState(false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Por favor, insira a chave de acesso',
-            style: GoogleFonts.comfortaa(
-              fontSize: 16,
-              color: Colors.white,
-            ),
-          ),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.redAccent,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      await showErrorSheet(context, 'Por favor, insira a chave de acesso'); // Alerta de erro
     }
   }
 
@@ -136,57 +83,35 @@ class LoginService {
     }
   }
 
-  static void _showUserFriendlyMessage(String message, BuildContext context) {
+  static Future<void> _showUserFriendlyMessage(String message, BuildContext context) async {
     String userFriendlyMessage;
-    Color backgroundColor;
 
     switch (message) {
       case 'missing parameters':
         userFriendlyMessage = 'Alguns parâmetros estão ausentes. Por favor, tente novamente.';
-        backgroundColor = Colors.orangeAccent;
         break;
       case 'invalid token':
         userFriendlyMessage = 'Token inválido. Verifique sua conexão e tente novamente.';
-        backgroundColor = Colors.redAccent;
         break;
       case 'disabled key':
         userFriendlyMessage = 'Sua chave foi desativada. Entre em contato com o suporte.';
-        backgroundColor = Colors.grey;
         break;
       case 'invalid package':
         userFriendlyMessage = 'O pacote da chave não é compatível. Verifique suas credenciais.';
-        backgroundColor = Colors.blueAccent;
         break;
       case 'expired key':
         userFriendlyMessage = 'Sua chave expirou. Renove sua assinatura para continuar.';
-        backgroundColor = Colors.purpleAccent;
         break;
       case 'cheating key':
         userFriendlyMessage = 'A chave não é válida para este dispositivo. O uso compartilhado não é permitido.';
-        backgroundColor = Colors.deepOrangeAccent;
         break;
       case 'invalid key':
         userFriendlyMessage = 'Chave incorreta. Verifique e tente novamente.';
-        backgroundColor = Colors.red;
         break;
       default:
         userFriendlyMessage = 'Ocorreu um erro inesperado. Tente novamente mais tarde.';
-        backgroundColor = Colors.redAccent;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          userFriendlyMessage,
-          style: GoogleFonts.comfortaa(
-            fontSize: 16,
-            color: Colors.white,
-          ),
-        ),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: backgroundColor,
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    await showErrorSheet(context, userFriendlyMessage); // Alerta de erro
   }
 }
