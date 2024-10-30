@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 
 class Animated3DCoin extends StatefulWidget {
   final double size;
@@ -41,30 +42,34 @@ class _Animated3DCoinState extends State<Animated3DCoin> with SingleTickerProvid
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Fundo da moeda com gradiente dourado mais claro
-              ShaderMask(
-                shaderCallback: (Rect bounds) {
-                  return LinearGradient(
-                    colors: [
-                      Colors.yellowAccent.shade400, // Dourado claro
-                      Colors.amber.shade600, // Um tom de dourado mais vibrante
-                      Colors.yellow.shade200, // Para mais brilho
-                    ],
-                    stops: [0.0, 0.5, 1.0],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ).createShader(bounds);
-                },
-                child: Icon(
-                  Icons.circle, // Forma da moeda
-                  size: widget.size,
-                  color: Colors.white, // Cor base para aplicar o gradiente
+              // Fundo da moeda com efeito shimmer dourado
+              Shimmer.fromColors(
+                baseColor: Colors.amber.shade200,
+                highlightColor: Colors.amber.shade400,
+                child: ShaderMask(
+                  shaderCallback: (Rect bounds) {
+                    return LinearGradient(
+                      colors: [
+                        Colors.amber.shade200,
+                        Colors.amber.shade400,
+                        Colors.amber.shade200,
+                      ],
+                      stops: [0.0, 0.5, 1.0],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ).createShader(bounds);
+                  },
+                  child: Icon(
+                    Icons.circle, // Forma da moeda
+                    size: widget.size,
+                    color: Colors.white, // Cor base para aplicar o gradiente
+                  ),
                 ),
               ),
-              // Símbolo do cifrão no centro, preto e menor
+              // Símbolo do cifrão maior no centro, visível sobre o shimmer
               Icon(
                 Icons.attach_money,
-                size: widget.size * 0.8, // Ajuste do tamanho do cifrão
+                size: widget.size * 0.8, // Ajuste do tamanho do cifrão (80% do tamanho da moeda)
                 color: Colors.black, // Símbolo do cifrão preto
               ),
             ],

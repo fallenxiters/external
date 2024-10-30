@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
 
 class SidebarMenu extends StatelessWidget {
   final int selectedIndex;
@@ -20,8 +21,8 @@ class SidebarMenu extends StatelessWidget {
       widthFactor: 0.65,
       child: Drawer(
         child: Container(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
               colors: [
                 Color(0xFF1e1e26),
                 Color(0xFF1a1a20),
@@ -82,12 +83,9 @@ class SidebarMenu extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
-        leading: ShaderMask(
-          shaderCallback: (bounds) => const LinearGradient(
-            colors: [Color(0xFFBB86FC), Color(0xFF6200EE)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ).createShader(bounds),
+        leading: Shimmer.fromColors(
+          baseColor: Colors.amber.shade200,
+          highlightColor: Colors.amber.shade400,
           child: Icon(
             icon,
             color: Colors.white,

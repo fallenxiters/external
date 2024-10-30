@@ -198,7 +198,7 @@ class _GerarSensibilidadeScreenState extends State<GerarSensibilidadeScreen>
           ),
         ),
         if (_isArquivoExpanded) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: 5),
           ..._buildSensibilidadesGeradas(),
         ],
       ],

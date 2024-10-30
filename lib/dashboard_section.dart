@@ -14,7 +14,7 @@ class DashboardSection extends StatefulWidget {
   final String seller;
   final String expiryDate;
   final WebSocketService webSocketService;
-  final String game; // Adicionado como parâmetro normal
+  final String game;
 
   const DashboardSection({
     Key? key,
@@ -23,7 +23,7 @@ class DashboardSection extends StatefulWidget {
     required this.seller,
     required this.expiryDate,
     required this.webSocketService,
-    required this.game, // Agora faz parte dos parâmetros normais
+    required this.game,
   }) : super(key: key);
 
   @override
@@ -38,7 +38,7 @@ class _DashboardSectionState extends State<DashboardSection> with TickerProvider
   String? _keyValue;
   String? _seller;
   String? _expiryDate;
-  String? _game; // Variável de instância para 'game'
+  String? _game;
   bool _isUserDataLoading = true;
   bool _isMissionLoading = true;
   bool _isTimerActive = true;
@@ -52,8 +52,6 @@ class _DashboardSectionState extends State<DashboardSection> with TickerProvider
   void initState() {
     super.initState();
     _initializeWebSocketService();
-
-    // Inicializa _game com o valor passado de widget
     _game = widget.game;
 
     _controller = AnimationController(
@@ -153,10 +151,10 @@ class _DashboardSectionState extends State<DashboardSection> with TickerProvider
     if (canClaim && _keyValue != null) {
       setState(() {
         canClaim = false;
-        isClaimingReward = true; // Iniciar o progresso de resgate
+        isClaimingReward = true;
       });
 
-      widget.webSocketService.claimMission(_keyValue!, 1); // Solicitação de resgate
+      widget.webSocketService.claimMission(_keyValue!, 1);
       _startMissionTimer();
     }
   }
@@ -191,7 +189,8 @@ class _DashboardSectionState extends State<DashboardSection> with TickerProvider
             _buildUserDataSection(),
             const SizedBox(height: 20),
             const SectionTitle(title: 'Missões Diárias'),
-            _buildDailyMissionsSection(),
+            _buildComingSoonCard(),  // Card de "Em Breve"
+            // _buildDailyMissionsSection(),
             const SizedBox(height: 20),
             const SectionTitle(title: 'Atualizações'),
             const UpdateSection(),
@@ -200,6 +199,41 @@ class _DashboardSectionState extends State<DashboardSection> with TickerProvider
       ),
     );
   }
+
+Widget _buildComingSoonCard() {
+  return Container(
+    decoration: BoxDecoration(
+      color: const Color(0xFF14141a),
+      borderRadius: BorderRadius.circular(10),
+    ),
+    padding: const EdgeInsets.all(16.0),
+    child: Center(
+      child: Shimmer.fromColors(
+        baseColor: Colors.grey.shade600,
+        highlightColor: Colors.grey.shade300,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.access_time, // Ícone de relógio para representar "Em Breve"
+              color: Colors.grey.shade300,
+              size: 30, // Tamanho do ícone
+            ),
+            const SizedBox(width: 10), // Espaço entre o ícone e o texto
+            Text(
+              'Em Breve',
+              style: GoogleFonts.comfortaa(
+                fontSize: 24, // Tamanho grande para o texto
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade300,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
 
   Widget _buildUserDataSection() {
     if (_isUserDataLoading) {
@@ -255,7 +289,7 @@ class _DashboardSectionState extends State<DashboardSection> with TickerProvider
           ),
           _buildListItem(
             title: 'Jogo',
-            value: _game ?? 'N/A', // Exibindo o valor do jogo
+            value: _game ?? 'N/A',
             icon: Icons.videogame_asset,
           ),
         ],
@@ -263,35 +297,81 @@ class _DashboardSectionState extends State<DashboardSection> with TickerProvider
     );
   }
 
-  Widget _buildListItem({required String title, required String value, required IconData icon}) {
+  Widget _buildGameInfoSection() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF14141a),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        children: [
+          _buildListItem(
+            title: 'Nome do Jogo',
+            value: widget.game,
+            icon: Icons.videogame_asset,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: AnimatedDashedDivider(
+              controller: _dividerController,
+              color: Colors.grey,
+            ),
+          ),
+          _buildListItem(
+            title: 'Versão do Jogo',
+            value: 'Versão não especificada',
+            icon: Icons.system_update_alt,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExternalInfoSection() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF14141a),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        children: [
+          _buildListItem(
+            title: 'Versão do External',
+            value: 'Versão não especificada',
+            icon: Icons.extension,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: AnimatedDashedDivider(
+              controller: _dividerController,
+              color: Colors.grey,
+            ),
+          ),
+          _buildListItem(
+            title: 'Status',
+            value: 'Status desconhecido',
+            icon: Icons.cloud_off,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildListItem({
+    required String title,
+    required String value,
+    required IconData icon,
+  }) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-      leading: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return ShaderMask(
-            shaderCallback: (bounds) {
-              final double slide = _controller.value * 2 - 1;
-              return LinearGradient(
-                colors: [
-                  Colors.amber.shade200,
-                  Colors.amber.withOpacity(1.0),
-                  Colors.amber.shade400,
-                  Colors.amber.withOpacity(1.0),
-                  Colors.amber.shade200,
-                ],
-                stops: const [0.0, 0.4, 0.5, 0.6, 1.0],
-                begin: Alignment(-1.5 + slide, 0),
-                end: Alignment(1.5 + slide, 0),
-              ).createShader(bounds);
-            },
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 20,
-            ),
-          );
-        },
+      leading: Shimmer.fromColors(
+        baseColor: Colors.amber.shade200,
+        highlightColor: Colors.amber.shade400,
+        child: Icon(
+          icon,
+          color: Colors.white,
+          size: 20,
+        ),
       ),
       title: Text(
         title,
@@ -304,152 +384,136 @@ class _DashboardSectionState extends State<DashboardSection> with TickerProvider
     );
   }
 
-Widget _buildCircularShimmer() {
-  return Container(
-    decoration: BoxDecoration(
-      color: const Color(0xFF14141a), // Cor do card
-      borderRadius: BorderRadius.circular(10), // Bordas arredondadas
-    ),
-    child: Column(
-      children: List.generate(4, (index) {
-        return Column(
-          children: [
-            ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-              leading: Shimmer.fromColors(
-                baseColor: Colors.grey.shade800,
-                highlightColor: Colors.grey.shade500,
-                child: Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade800,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-              title: Row(
-                children: [
-                  // Shimmer para o título
-                  Shimmer.fromColors(
-                    baseColor: Colors.grey.shade800,
-                    highlightColor: Colors.grey.shade500,
-                    child: Container(
-                      height: 20,
-                      width: 70, // Tamanho do título
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade800,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+  Widget _buildCircularShimmer() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF14141a),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        children: List.generate(4, (index) {
+          return Column(
+            children: [
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                leading: Shimmer.fromColors(
+                  baseColor: Colors.grey.shade800,
+                  highlightColor: Colors.grey.shade500,
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade800,
+                      shape: BoxShape.circle,
                     ),
                   ),
-                  const SizedBox(width: 8.0), // Espaço entre o título e o conteúdo
-                  // Shimmer para o conteúdo
-                  Expanded(
-                    child: Shimmer.fromColors(
+                ),
+                title: Row(
+                  children: [
+                    Shimmer.fromColors(
                       baseColor: Colors.grey.shade800,
                       highlightColor: Colors.grey.shade500,
                       child: Container(
                         height: 20,
+                        width: 70,
                         decoration: BoxDecoration(
                           color: Colors.grey.shade800,
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            // Adiciona o divisor apenas se não for o último shimmer
-            if (index < 3) 
-              AnimatedDashedDivider(
-                controller: _dividerController,
-                color: Colors.grey,
-              ),
-          ],
-        );
-      }),
-    ),
-  );
-}
-
-Widget _buildMissionShimmerCard() {
-  return Container(
-    decoration: BoxDecoration(
-      color: const Color(0xFF14141a),
-      borderRadius: BorderRadius.circular(10),
-    ),
-    padding: const EdgeInsets.all(16.0),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Shimmer para o Título
-        Shimmer.fromColors(
-          baseColor: Colors.grey.shade800,
-          highlightColor: Colors.grey.shade500,
-          child: Container(
-            width: 120, // Largura reduzida para o título
-            height: 20,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade800,
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12), // Espaçamento entre título e subtítulo
-
-        // Shimmer para o Subtítulo
-        Shimmer.fromColors(
-          baseColor: Colors.grey.shade800,
-          highlightColor: Colors.grey.shade500,
-          child: Container(
-            width: double.infinity, // O subtítulo ocupa toda a largura do card
-            height: 18,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade800,
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16), // Espaçamento entre subtítulo e quantidade
-
-        // Shimmer para a Contagem de Moedas (tamanho menor)
-        Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Shimmer.fromColors(
-              baseColor: Colors.grey.shade800,
-              highlightColor: Colors.grey.shade500,
-              child: Container(
-                width: 80, // Largura menor para a quantidade de moedas
-                height: 18,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade800,
-                  borderRadius: BorderRadius.circular(10),
+                    const SizedBox(width: 8.0),
+                    Expanded(
+                      child: Shimmer.fromColors(
+                        baseColor: Colors.grey.shade800,
+                        highlightColor: Colors.grey.shade500,
+                        child: Container(
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade800,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
+              if (index < 3)
+                AnimatedDashedDivider(
+                  controller: _dividerController,
+                  color: Colors.grey,
+                ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
 
-
-
-
-
+/* 
   Widget _buildDailyMissionsSection() {
     if (_isMissionLoading) {
       return Column(
         children: [
-          _buildMissionShimmerCard(),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF14141a),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Shimmer.fromColors(
+                  baseColor: Colors.grey.shade800,
+                  highlightColor: Colors.grey.shade500,
+                  child: Container(
+                    width: 120,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade800,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Shimmer.fromColors(
+                  baseColor: Colors.grey.shade800,
+                  highlightColor: Colors.grey.shade500,
+                  child: Container(
+                    width: double.infinity,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade800,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Shimmer.fromColors(
+                      baseColor: Colors.grey.shade800,
+                      highlightColor: Colors.grey.shade500,
+                      child: Container(
+                        width: 80,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade800,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ],
       );
     }
-
     return canClaim || timeRemaining == 0 ? _buildClaimButton() : _buildCooldownCard();
   }
 
@@ -486,7 +550,7 @@ Widget _buildMissionShimmerCard() {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.monetization_on, color: Colors.amber, size: 24),
+                    Animated3DCoin(size: 24),
                     const SizedBox(width: 5),
                     Text(
                       '10',
@@ -629,6 +693,8 @@ Widget _buildMissionShimmerCard() {
       ),
     );
   }
+*/
+
 }
 
 class SectionTitle extends StatelessWidget {
